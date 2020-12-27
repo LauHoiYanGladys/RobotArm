@@ -79,6 +79,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>C:\Users\Anton\source\repos\eigen;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
@@ -140,7 +141,19 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Arm.cpp" />
+    <ClCompile Include="Camera3D.cpp" />
+    <ClCompile Include="fssimplewindow.cpp" />
+    <ClCompile Include="Link.cpp" />
+    <ClCompile Include="OrbitingViewer.cpp" />
     <ClCompile Include="robot_simulation.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Arm.h" />
+    <ClInclude Include="Camera3D.h" />
+    <ClInclude Include="fssimplewindow.h" />
+    <ClInclude Include="Link.h" />
+    <ClInclude Include="OrbitingViewer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
