@@ -116,7 +116,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
@@ -143,17 +143,23 @@
   <ItemGroup>
     <ClCompile Include="Arm.cpp" />
     <ClCompile Include="Camera3D.cpp" />
+    <ClCompile Include="DrawingUtilNG.cpp" />
     <ClCompile Include="fssimplewindow.cpp" />
+    <ClCompile Include="GraphicFont.cpp" />
     <ClCompile Include="Link.cpp" />
     <ClCompile Include="OrbitingViewer.cpp" />
     <ClCompile Include="robot_simulation.cpp" />
+    <ClCompile Include="yspng.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Arm.h" />
     <ClInclude Include="Camera3D.h" />
+    <ClInclude Include="DrawingUtilNG.h" />
     <ClInclude Include="fssimplewindow.h" />
+    <ClInclude Include="GraphicFont.h" />
     <ClInclude Include="Link.h" />
     <ClInclude Include="OrbitingViewer.h" />
+    <ClInclude Include="yspng.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
