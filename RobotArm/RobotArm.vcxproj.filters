@@ -42,6 +42,9 @@
     <ClCompile Include="yspng.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ViewManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="fssimplewindow.h">
@@ -68,5 +71,16 @@
     <ClInclude Include="yspng.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ViewManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="CourierNewFont01.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="CourierNewFont01.txt" />
   </ItemGroup>
 </Project>
