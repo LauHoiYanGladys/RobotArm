@@ -149,6 +149,7 @@
     <ClCompile Include="Link.cpp" />
     <ClCompile Include="OrbitingViewer.cpp" />
     <ClCompile Include="robot_simulation.cpp" />
+    <ClCompile Include="ViewManager.cpp" />
     <ClCompile Include="yspng.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -159,7 +160,14 @@
     <ClInclude Include="GraphicFont.h" />
     <ClInclude Include="Link.h" />
     <ClInclude Include="OrbitingViewer.h" />
+    <ClInclude Include="ViewManager.h" />
     <ClInclude Include="yspng.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="CourierNewFont01.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="CourierNewFont01.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
