@@ -39,24 +39,36 @@ void Arm::buildArm()
 	theFrames.push_back(firstFrame);
 
 	// create the second (revolute) joint, corresponds to the 1st DH frame
-	Joint* secondJoint = new Joint(*firstFrame, 25.);
+	Joint* secondJoint = new Joint(*firstFrame, 80.);
 	/*secondJoint.assignParentJoint(&(theJoints.back()));*/
 	secondJoint->assignParentJoint(firstJoint);
 
 	// add the joint to the joint collection
 	theJoints.push_back(secondJoint);
 
-	//// define the second DH frame 
-	//DHframe theFrame(0., PI / 2, 0., PI / 2);
+	// define the second DH frame 
+	DHframe* secondFrame = new DHframe(0., PI / 2, 0., PI / 2);
 
-	//// add DH frame to frame collection
-	//theFrames.push_back(theFrame);
+	// add DH frame to frame collection
+	theFrames.push_back(secondFrame);
 
-	//// create the second (revolute) joint 
-	//Joint theJoint(theFrame);
+	// define the third DH frame 
+	DHframe* thirdFrame = new DHframe(0., 0., 25., 0);
 
-	//// add the joint to the joint collection
-	//theJoints.push_back(theJoint);
+	// add DH frame to frame collection
+	theFrames.push_back(thirdFrame);
 
+	// create the third (prismatic) joint
+	// note that it corresponds to the third DH frame instead of second DH frame
+	Joint* thirdJoint = new Joint(*thirdFrame, 25.);
+
+	// add the joint to the joint collection
+	theJoints.push_back(thirdJoint);
+
+	// define the fourth DH frame 
+	DHframe* fourthFrame = new DHframe(0., 0., 25., 0);
+
+	// add DH frame to frame collection
+	theFrames.push_back(fourthFrame);
 	
 }
