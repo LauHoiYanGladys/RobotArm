@@ -24,7 +24,7 @@ public:
 		rotationMat = theFrame.getRotationMat();
 		/*child = nullptr;*/
 		parent = nullptr;
-		link = new Link(link_length);
+		link = new Link(link_length, Link::alongZ);
 	};
 
 	// draws joint at the correct position and orientation
