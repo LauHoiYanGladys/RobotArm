@@ -16,7 +16,7 @@ void ViewManager::initialize()
 	theOrbiter.h = 0.6;
 
 	theCamera.farZ = view_dist + theOrbiter.dist;
-
+	theArm.buildArm();
 }
 
 void ViewManager::manage()
@@ -128,7 +128,7 @@ void ViewManager::draw_environment3D()
 void ViewManager::draw_overlay2D()
 {
 	using namespace std;
-	
+
 	//set up for 2D drawing
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
