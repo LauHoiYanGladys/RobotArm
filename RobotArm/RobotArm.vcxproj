@@ -88,8 +88,9 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -143,9 +144,11 @@
   <ItemGroup>
     <ClCompile Include="Arm.cpp" />
     <ClCompile Include="Camera3D.cpp" />
+    <ClCompile Include="DHframe.cpp" />
     <ClCompile Include="DrawingUtilNG.cpp" />
     <ClCompile Include="fssimplewindow.cpp" />
     <ClCompile Include="GraphicFont.cpp" />
+    <ClCompile Include="Joint.cpp" />
     <ClCompile Include="Link.cpp" />
     <ClCompile Include="OrbitingViewer.cpp" />
     <ClCompile Include="robot_simulation.cpp" />
@@ -155,9 +158,11 @@
   <ItemGroup>
     <ClInclude Include="Arm.h" />
     <ClInclude Include="Camera3D.h" />
+    <ClInclude Include="DHframe.h" />
     <ClInclude Include="DrawingUtilNG.h" />
     <ClInclude Include="fssimplewindow.h" />
     <ClInclude Include="GraphicFont.h" />
+    <ClInclude Include="Joint.h" />
     <ClInclude Include="Link.h" />
     <ClInclude Include="OrbitingViewer.h" />
     <ClInclude Include="ViewManager.h" />
