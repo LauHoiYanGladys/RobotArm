@@ -32,7 +32,13 @@ void Joint::draw()
 	Vector3d axisRotate = theAngleAxis.axis();
 	glRotatef(angleRotate, axisRotate(0), axisRotate(1), axisRotate(2));
 
+	//drawing of the joint
+	glColor3ub(0, 0, 255);	//blue
 	DrawingUtilNG::drawCylinderZ(2., 2., 10., 0, 0, 0);
+
+	//drawing of the link
+	glColor3ub(255, 0, 0);	//red
+	link->draw_simple(center(0), center(1), center(2));
 
 	// restore original matrix state
 	glPopMatrix();

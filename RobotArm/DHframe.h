@@ -6,7 +6,7 @@
 using namespace Eigen;
 
 class DHframe {
-private:
+public:
 	Matrix4d transformMatrix;
 	double linkLength, linkTwist, linkOffset, jointAngle;
 public:
