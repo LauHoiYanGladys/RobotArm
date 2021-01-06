@@ -47,4 +47,7 @@ public:
 
 	//assigns a length to the link that belongs to the joint
 	void assignLinkLength(double _length) { link->length = _length; }
+
+	//assigns a direction to the link that belongs to the joint
+	void assignLinkDirection(Link::linkDirection _direction) { link->direction = _direction; }
 };

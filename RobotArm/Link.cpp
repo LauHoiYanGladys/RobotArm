@@ -6,5 +6,17 @@ void Link::draw_simple()
 	double radius = 1;
 
 	//need to add cases depending on link direction
-	DrawingUtilNG::drawCylinderZ(radius, radius, length, 0, 0, 0);
+	switch (direction)
+	{
+	case alongX:
+		DrawingUtilNG::drawCylinderXOffset(radius, radius, length, 0, 0, 0);
+		return;
+	case alongY:
+		DrawingUtilNG::drawCylinderYOffset(radius, radius, length, 0, 0, 0);
+		return;
+	case alongZ:
+		DrawingUtilNG::drawCylinderZOffset(radius, radius, length, 0, 0, 0);
+		return;
+	}
+			
 }

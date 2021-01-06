@@ -178,6 +178,60 @@ void DrawingUtilNG::drawCircleX(double centerX, double centerY, double centerZ,
 	glEnd();
 }
 
+
+void DrawingUtilNG::drawCylinderX(double r_top, double r_bot, double height, double centerX, double centerY, double centerZ) {
+	float y_curr, y_prev, z_curr, z_prev, angle;
+	float radianConvert = atan(1.) / 45.;
+	r_top = fabs(r_top);
+	r_bot = fabs(r_bot);
+
+	// adapt the number of segments based on radius size
+	int stepSize = 1;
+
+	double checkRad = max(r_top, r_bot);
+	if (checkRad < 10)
+		stepSize = 3;
+	else if (checkRad < 200)
+		stepSize = round((3. - 1.) / (10. - 200.) * (checkRad - 200.) + 1.);
+
+	stepSize *= 6;  // always want stepSize to be a factor of 360
+
+	y_prev = 1;
+	z_prev = 0;
+
+	for (int i = stepSize; i <= 360; i += stepSize) {
+
+		angle = i * radianConvert;
+		y_curr = cos(angle);
+		z_curr = sin(angle);
+
+		//rectangle for outside of cylinder
+		glBegin(GL_POLYGON);
+		glVertex3d((-height / 2) + centerX, (y_prev * r_bot) + centerY, (z_prev * r_bot) + centerZ);
+		glVertex3d((height / 2) + centerX, (y_prev * r_top) + centerY, (z_prev * r_bot) + centerZ);
+		glVertex3d((height / 2) + centerX, (y_curr * r_top) + centerY, (z_curr * r_bot) + centerZ);
+		glVertex3d((-height / 2) + centerX, (y_curr * r_bot) + centerY, (z_curr * r_bot) + centerZ);
+		glEnd();
+
+		//triangle for top of cylinder
+		glBegin(GL_POLYGON);
+		glVertex3d((height / 2) + centerX, (y_prev * r_top) + centerY, (z_prev * r_bot) + centerZ);
+		glVertex3d((height / 2) + centerX, (y_curr * r_top) + centerY, (z_curr * r_bot) + centerZ);
+		glVertex3d((height / 2) + centerX, 0 + centerY, 0 + centerZ);
+		glEnd();
+
+		//triangle for bottom of cylinder
+		glBegin(GL_POLYGON);
+		glVertex3d((-height / 2) + centerX, (y_prev * r_bot) + centerY, (z_prev * r_bot) + centerZ);
+		glVertex3d((-height / 2) + centerX, (y_curr * r_bot) + centerY, (z_curr * r_bot) + centerZ);
+		glVertex3d((-height / 2) + centerX, 0 + centerY, 0 + centerZ);
+		glEnd();
+
+		y_prev = y_curr;
+		z_prev = z_curr;
+	}
+}
+
 void DrawingUtilNG::drawCylinderY(double r_top, double r_bot, double height, double centerX, double centerY, double centerZ) {
 	float x_curr, x_prev, z_curr, z_prev, angle;
 	float radianConvert = atan(1.) / 45.;
@@ -284,6 +338,20 @@ void DrawingUtilNG::drawCylinderZ(double r_top, double r_bot, double height, dou
 	}
 }
 
+void DrawingUtilNG::drawCylinderXOffset(double r_top, double r_bot, double height, double centerX, double centerY, double centerZ)
+{
+	drawCylinderX(r_top, r_bot, height, centerX + (height / 2), centerY, centerZ);
+}
+
+void DrawingUtilNG::drawCylinderYOffset(double r_top, double r_bot, double height, double centerX, double centerY, double centerZ)
+{
+	drawCylinderY(r_top, r_bot, height, centerX, centerY + (height / 2), centerZ);
+}
+
+void DrawingUtilNG::drawCylinderZOffset(double r_top, double r_bot, double height, double centerX, double centerY, double centerZ)
+{
+	drawCylinderZ(r_top, r_bot, height, centerX, centerY, centerZ + (height / 2));
+}
 
 void DrawingUtilNG::drawRectangle(double x, double y, int sizeX, int sizeY, bool filled)
 {

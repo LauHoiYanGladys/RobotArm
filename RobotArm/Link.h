@@ -22,7 +22,7 @@ public:
 
 	}
 
-	//draws a simple version of the link, at the origin & rotation
+	//draws a simple version of the link (cylinder) at (0,0,0) pointing in the desired direction
 	void draw_simple();
 
 };

@@ -35,15 +35,23 @@ namespace DrawingUtilNG {
 
 	void drawCircleX(double centerX, double centerY, double centerZ, double radius, bool filled);
 
+	//draws cylinder along X axis - center is at middle of cylinder axis
+	void drawCylinderX(double r_top, double r_bot, double height, double centerX, double centerY, double centerZ);
+
+	//draws cylinder along Y axis - center is at middle of cylinder axis
 	void drawCylinderY(double r_top, double r_bot, double height, double centerX, double centerY, double centerZ);
 
+	//draws cylinder along Z axis - center is at middle of cylinder axis
 	void drawCylinderZ(double r_top, double r_bot, double height, double centerX, double centerY, double centerZ);
 
-	//void drawSphere(double radius, double centerX, double centerY, double centerZ);
+	//draws cylinder along X axis - center is at bottom face
+	void drawCylinderXOffset(double r_top, double r_bot, double height, double centerX, double centerY, double centerZ);
 
-	//void drawCylinder(double radius, double height);
-	
-	//void drawCylinder(double rTop, double rBase, double height);
+	//draws cylinder along Y axis - center is at bottom face
+	void drawCylinderYOffset(double r_top, double r_bot, double height, double centerX, double centerY, double centerZ);
+
+	//draws cylinder along Z axis - center is at bottom face
+	void drawCylinderZOffset(double r_top, double r_bot, double height, double centerX, double centerY, double centerZ);
 	
 	void drawRectangle(double x, double y, int sizeX, int sizeY, bool filled);
 
