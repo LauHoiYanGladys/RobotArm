@@ -38,7 +38,7 @@ void Joint::draw()
 
 	//drawing of the link
 	glColor3ub(255, 0, 0);	//red
-	link->draw_simple(0, 0, 0);
+	link->draw_simple();
 
 	// restore original matrix state
 	glPopMatrix();

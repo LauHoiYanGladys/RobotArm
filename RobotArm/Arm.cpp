@@ -11,11 +11,8 @@ void Arm::draw()
 		currJoint->draw();
 	}*/
 	theJoints[0]->draw();
-	//draw link in between here
 	theJoints[1]->draw();
 	
-	
-
 }
 
 void Arm::buildArm()
@@ -27,7 +24,7 @@ void Arm::buildArm()
 	theFrames.push_back(zerothFrame);
 
 	// create the first (revolute) joint, corresponds to 0th DH frame
-	Joint* firstJoint = new Joint(*zerothFrame, 50);
+	Joint* firstJoint = new Joint(*zerothFrame, 25);
 
 	// add the joint to the joint collection
 	theJoints.push_back(firstJoint);
@@ -42,6 +39,7 @@ void Arm::buildArm()
 	Joint* secondJoint = new Joint(*firstFrame, 80.);
 	/*secondJoint.assignParentJoint(&(theJoints.back()));*/
 	secondJoint->assignParentJoint(firstJoint);
+	secondJoint->assignLinkDirection(Link::alongX);
 
 	// add the joint to the joint collection
 	theJoints.push_back(secondJoint);
