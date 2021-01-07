@@ -52,6 +52,12 @@ namespace DrawingUtilNG {
 
 	//draws cylinder along Z axis - center is at bottom face
 	void drawCylinderZOffset(double r_top, double r_bot, double height, double centerX, double centerY, double centerZ);
+
+	//draws prism along Z axis - center is at middle of Z axis
+	void drawPrismZ(double x_size, double y_size, double height, double centerX, double centerY, double centerZ);
+
+	//draws prism along Z axis - center is at bottom face
+	void drawPrismZOffset(double x_size, double y_size, double height, double centerX, double centerY, double centerZ);
 	
 	void drawRectangle(double x, double y, int sizeX, int sizeY, bool filled);
 

@@ -353,6 +353,23 @@ void DrawingUtilNG::drawCylinderZOffset(double r_top, double r_bot, double heigh
 	drawCylinderZ(r_top, r_bot, height, centerX, centerY, centerZ + (height / 2));
 }
 
+void DrawingUtilNG::drawPrismZ(double x_size, double y_size, double height, double centerX, double centerY, double centerZ)
+{
+	double x1 = centerX - (x_size / 2);
+	double x2 = centerX + (x_size / 2);
+	double y1 = centerY - (y_size / 2);
+	double y2 = centerY + (y_size / 2);
+	double z1 = centerZ - (height / 2);
+	double z2 = centerZ + (height / 2);
+
+	drawCube(x1, y1, z1, x2, y2, z2);
+}
+
+void DrawingUtilNG::drawPrismZOffset(double x_size, double y_size, double height, double centerX, double centerY, double centerZ)
+{
+	drawPrismZ(x_size, y_size, height, centerX, centerY, centerZ + (height / 2));
+}
+
 void DrawingUtilNG::drawRectangle(double x, double y, int sizeX, int sizeY, bool filled)
 {
 	if (filled)

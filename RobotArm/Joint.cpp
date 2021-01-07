@@ -42,7 +42,7 @@ void Joint::draw()
 	if (theJointType == revolute)
 		DrawingUtilNG::drawCylinderZ(2., 2., 10., 0, 0, 0);
 	else if (theJointType == prismatic)
-		DrawingUtilNG::drawCube(-2, -2, -2, 2, 2, 2, false);
+		DrawingUtilNG::drawPrismZ(4., 4., 10., 0, 0, 0);
 
 	//drawing of the link
 	glColor3ub(255, 0, 0);	//red
