@@ -22,23 +22,52 @@ void DHframe::initialize()
 	transformMatrix(3, 3) = 1;
 }
 
-Vector3d DHframe::getCenter()
-{
-	Vector3d center = transformMatrix.block<3, 1>(0, 3);
-	return center;
-	
-}
-
 Vector3d DHframe::getZAxis()
 {
 	Vector3d zAxis = transformMatrix.block<3, 1>(0, 2);
 	return zAxis;
 }
 
-Matrix3d DHframe::getRotationMat()
+
+void DHframe::assignParentDHframe(DHframe* theParent)
 {
-	Matrix3d rotationMat = transformMatrix.block<3, 3>(0, 0);
-	return rotationMat;
+	parent = theParent;
+	worldTransformMatrix = getWorldTransformMatrix(); // can be assigned once parent DH frame is known
+	/*std::cout << "World transform matrix: " << std::endl << worldTransformMatrix << std::endl;*/
+}
+
+Vector3d DHframe::getWorldCenter()
+{
+	return getTranslation(worldTransformMatrix);
+}
+
+Matrix3d DHframe::getWorldRotationMat()
+{
+	return getRotation(worldTransformMatrix);
+}
+
+Matrix4d DHframe::getWorldTransformMatrix()
+{
+	if (parent == nullptr) // base case
+		return transformMatrix;
+	else {
+		/*std::cout << "parent transform matrix" << std::endl << parent->worldTransformMatrix << std::endl;*/
+		return  (parent->worldTransformMatrix) * transformMatrix;
+	}
+		
+}
+
+Vector3d DHframe::getTranslation(Matrix4d theMatrix)
+{
+	Vector3d translation = theMatrix.block<3, 1>(0, 3);
+	return translation;
+}
+
+Matrix3d DHframe::getRotation(Matrix4d theMatrix)
+{
+	Matrix3d rotation = theMatrix.block<3, 3>(0, 0);
+	return rotation;
+
 }
 
 void DHframe::updateTransformMatrix(double newLinkOffset, double newJointAngle)
