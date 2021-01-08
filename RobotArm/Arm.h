@@ -35,6 +35,9 @@ public:
 	// builds the Arm from DH parameters
 	void buildArm();
 
+	// changes joint variables
+	void moveArm(double newJointVariable1, double newJointVariable2, double newJointVariable3);
+
 	// gets DH parameters from user
 	void getDHParameters();
 

@@ -20,6 +20,8 @@ void DHframe::initialize()
 	transformMatrix(3, 1) = 0;
 	transformMatrix(3, 2) = 0;
 	transformMatrix(3, 3) = 1;
+
+	/*std::cout << "Transform matrix updated to:" << std::endl << transformMatrix << theta << std::endl;*/
 }
 
 Vector3d DHframe::getZAxis()
@@ -36,13 +38,20 @@ void DHframe::assignParentDHframe(DHframe* theParent)
 	/*std::cout << "World transform matrix: " << std::endl << worldTransformMatrix << std::endl;*/
 }
 
+//void DHframe::assignMovingJoint(Joint* theMovingJoint)
+//{
+//	movingJoint = theMovingJoint;
+//}
+
 Vector3d DHframe::getWorldCenter()
 {
+	worldTransformMatrix = getWorldTransformMatrix(); // to be 100% sure it's updated
 	return getTranslation(worldTransformMatrix);
 }
 
 Matrix3d DHframe::getWorldRotationMat()
 {
+	worldTransformMatrix = getWorldTransformMatrix(); // to be 100% sure it's updated
 	return getRotation(worldTransformMatrix);
 }
 
@@ -70,34 +79,75 @@ Matrix3d DHframe::getRotation(Matrix4d theMatrix)
 
 }
 
-void DHframe::updateTransformMatrix(double newLinkOffset, double newJointAngle)
-{
-	
-	updateLinkOffset(newLinkOffset);
-	updateJointAngle(newJointAngle);
-	initialize();
-	
-}
+//void DHframe::updateTransformMatrix()
+//{
+//	
+//	updateLinkOffset(newLinkOffset);
+//	updateJointAngle(newJointAngle);
+//	initialize();
+//	
+//}
 
 void DHframe::updateLinkLength(double newLinkLength)
 {
 	linkLength = newLinkLength;
+	initialize();
+	worldTransformMatrix = getWorldTransformMatrix();
 }
 
 void DHframe::updateLinkTwist(double newLinkTwist)
 {
 	linkTwist = newLinkTwist;
+	initialize();
+	worldTransformMatrix = getWorldTransformMatrix();
 }
 
-void DHframe::updateLinkOffset(double newLinkOffset)
+void DHframe::update_d_fixed(double new_d_fixed)
 {
-	linkOffset = newLinkOffset;
+	d_fixed = new_d_fixed;
+	updateLinkOffset();
+
 }
 
-void DHframe::updateJointAngle(double newJointAngle)
+void DHframe::update_d(double new_d)
 {
-	jointAngle = newJointAngle;
+	d = new_d;
+	updateLinkOffset();
 }
+
+void DHframe::updateLinkOffset()
+{
+	linkOffset = d + d_fixed;
+	initialize();
+	worldTransformMatrix = getWorldTransformMatrix();
+}
+
+void DHframe::update_theta_fixed(double new_theta_fixed)
+{
+	theta_fixed = new_theta_fixed;
+	updateJointAngle();
+}
+
+void DHframe::update_theta(double new_theta)
+{
+	theta = new_theta;
+	updateJointAngle();
+	/*std::cout << "Joint angle updated to " << theta << std::endl;*/
+
+}
+
+void DHframe::updateJointAngle()
+{
+	jointAngle = theta + theta_fixed;
+	initialize();
+	worldTransformMatrix = getWorldTransformMatrix();
+	
+}
+
+//void DHframe::updateMovingJoint()
+//{
+//	movingJoint->updateJointVariable();
+//}
 
 void DHframe::printTransformMatrix()
 {

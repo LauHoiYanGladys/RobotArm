@@ -35,6 +35,7 @@ void Arm::buildArm()
 	// define the first DH frame 
 	DHframe* firstFrame = new DHframe(0., PI/2, 25., 0.);
 	firstFrame->assignParentDHframe(zerothFrame);
+	/*firstFrame->assignMovingJoint(firstJoint);*/
 
 	// add DH frame to frame collection
 	theFrames.push_back(firstFrame);
@@ -48,14 +49,15 @@ void Arm::buildArm()
 	// add the joint to the joint collection
 	theJoints.push_back(secondJoint);
 
-	// define the second DH frame 
+	// define the second DH frame
 	DHframe* secondFrame = new DHframe(0., PI / 2, 0., PI / 2);
 	secondFrame->assignParentDHframe(firstFrame);
+	/*secondFrame->assignMovingJoint(secondJoint);*/
 
 	// add DH frame to frame collection
 	theFrames.push_back(secondFrame);
 
-	// define the third DH frame 
+	// define the third DH frame, note that it has no associated moving joint 
 	DHframe* thirdFrame = new DHframe(0., 0., 25., 0);
 	thirdFrame->assignParentDHframe(secondFrame);
 
@@ -66,15 +68,31 @@ void Arm::buildArm()
 	// note that it corresponds to the third DH frame instead of second DH frame
 	Joint* thirdJoint = new Joint(thirdFrame, 25.);
 	thirdJoint->setJointTypePrismatic();
+	thirdJoint->updateJointVariable(10.);
 
 	// add the joint to the joint collection
 	theJoints.push_back(thirdJoint);
 
-	//// define the fourth DH frame 
-	//DHframe* fourthFrame = new DHframe(0., 0., 25., 0);
-	//fourthFrame->assignParentDHframe(thirdFrame);
+	// define the fourth DH frame 
+	DHframe* fourthFrame = new DHframe(0., 0., 25., -PI/2);
+	fourthFrame->assignParentDHframe(thirdFrame);
+	/*fourthFrame->assignMovingJoint(thirdJoint);*/
 
-	//// add DH frame to frame collection
-	//theFrames.push_back(fourthFrame);
+	// add DH frame to frame collection
+	theFrames.push_back(fourthFrame);
 	
+}
+
+void Arm::moveArm(double newJointVariable1, double newJointVariable2, double newJointVariable3)
+{
+	// updates "theta" or "d" of relevant DH frames
+	theFrames[1]->update_theta(newJointVariable1);
+	theFrames[2]->update_theta(newJointVariable2);
+	theFrames[4]->update_d(newJointVariable3);
+
+	// updates the joint variables of relevant joints
+	theJoints[0]->updateJointVariable(newJointVariable1);
+	theJoints[1]->updateJointVariable(newJointVariable2);
+	theJoints[2]->updateJointVariable(newJointVariable3);
+
 }

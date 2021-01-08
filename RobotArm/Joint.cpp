@@ -41,12 +41,21 @@ void Joint::draw()
 	glColor3ub(0, 0, 255);	//blue
 	if (theJointType == revolute)
 		DrawingUtilNG::drawCylinderZ(2., 2., 10., 0, 0, 0);
-	else if (theJointType == prismatic)
+	else if (theJointType == prismatic) {
+		// prismatic joint itself without extension
 		DrawingUtilNG::drawPrismZ(4., 4., 10., 0, 0, 0);
+		glColor3ub(0, 191, 255);	//deep sky blue
+		// extension of prismatic joint ("center" shifted half the joint's original length in the z-direction)
+		DrawingUtilNG::drawPrismZOffset(4., 4., jointVariable, 0, 0, 5.);
+	}
+		
 
 	//drawing of the link
 	glColor3ub(255, 0, 0);	//red
-	link->draw_simple();
+	if (theJointType == revolute)
+		link->draw_simple();
+	else if (theJointType == prismatic)
+		link->draw_offset_prismatic(jointVariable);
 
 	// restore original matrix state
 	glPopMatrix();
@@ -65,6 +74,11 @@ void Joint::setJointTypePrismatic()
 void Joint::setJointTypeRevolute()
 {
 	theJointType = revolute;
+}
+
+void Joint::updateJointVariable(double newJointVariable)
+{
+	jointVariable = newJointVariable;
 }
 
 

@@ -3,6 +3,8 @@
 #include <sstream>
 #include <iomanip>
 
+const double ViewManager::PI = 3.1415927;
+
 void ViewManager::initialize()
 {
 	FsOpenWindow(16, 16, win_width, win_height, 1);
@@ -32,6 +34,7 @@ void ViewManager::manage()
 
 	//do the 3D drawing
 	draw_environment3D();
+	theArm.moveArm(0, PI/2, 50.);
 	theArm.draw();
 
 	//do the 2D overlay drawing

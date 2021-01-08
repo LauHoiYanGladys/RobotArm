@@ -20,3 +20,11 @@ void Link::draw_simple()
 	}
 			
 }
+
+void Link::draw_offset_prismatic(double offset)
+{
+	double radius = 1;
+	DrawingUtilNG::drawCylinderZOffset(radius, radius, length, 0, 0, offset);
+
+
+}

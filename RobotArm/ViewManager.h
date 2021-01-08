@@ -7,6 +7,7 @@
 class ViewManager
 {
 public:
+	static const double PI;
 	Arm theArm;
 	Camera3D theCamera;
 	OrbitingViewer theOrbiter;

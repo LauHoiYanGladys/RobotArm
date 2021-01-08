@@ -13,6 +13,10 @@ public:
 	Matrix3d rotationMat;
 	enum jointType { revolute, prismatic };
 
+	// so that each joint knows its own joint variable, a quantity generally stored in the next DH frame instead of its own
+	// espcially useful in drawing prismatic joints (which changes length)
+	double jointVariable; 
+
 	DHframe* frame;
 	Link* link;
 	//Joint* parent; // nullptr for the first joint
@@ -25,6 +29,7 @@ public:
 		/*parent = nullptr;*/
 		link = new Link(link_length, Link::alongZ);
 		theJointType = revolute;
+		jointVariable = 0.;
 	};
 
 	// draws joint at the correct position and orientation
@@ -44,5 +49,8 @@ public:
 
 	// set joint type as revolute (may be useful when editing an existing arm)
 	void setJointTypeRevolute();
+
+	// updates joint variable
+	void updateJointVariable(double newJointVariable);
 
 };
