@@ -38,10 +38,18 @@ void DHframe::assignParentDHframe(DHframe* theParent)
 	/*std::cout << "World transform matrix: " << std::endl << worldTransformMatrix << std::endl;*/
 }
 
-//void DHframe::assignMovingJoint(Joint* theMovingJoint)
-//{
-//	movingJoint = theMovingJoint;
-//}
+
+
+void DHframe::assignJoint(Joint* theJoint)
+{
+	joint = theJoint;
+}
+
+void DHframe::assignLink(Link* theLink, Link::linkDirection _direction)
+{
+	link = theLink;
+	theLink->assignLinkDirection(_direction);
+}
 
 Vector3d DHframe::getWorldCenter()
 {
@@ -79,14 +87,7 @@ Matrix3d DHframe::getRotation(Matrix4d theMatrix)
 
 }
 
-//void DHframe::updateTransformMatrix()
-//{
-//	
-//	updateLinkOffset(newLinkOffset);
-//	updateJointAngle(newJointAngle);
-//	initialize();
-//	
-//}
+
 
 void DHframe::updateLinkLength(double newLinkLength)
 {
@@ -144,12 +145,41 @@ void DHframe::updateJointAngle()
 	
 }
 
-//void DHframe::updateMovingJoint()
-//{
-//	movingJoint->updateJointVariable();
-//}
 
 void DHframe::printTransformMatrix()
 {
 	std::cout << transformMatrix << std::endl;
+}
+
+void DHframe::drawLink()
+{
+	if (link != nullptr) {
+		glColor3ub(255, 0, 0);	//red
+		if (joint != nullptr) {
+			if (joint->theJointType == Joint::revolute)
+				link->draw_simple();
+			else if (joint->theJointType == Joint::prismatic)
+				link->draw_offset_prismatic(joint->jointVariable);
+		}
+		else
+			link->draw_simple();
+		
+	}
+}
+
+void DHframe::drawJoint()
+{
+	if (joint != nullptr) {
+		//drawing of the joint
+		glColor3ub(0, 0, 255);	//blue
+		if (joint->theJointType == Joint::revolute)
+			DrawingUtilNG::drawCylinderZ(2., 2., 10., 0, 0, 0);
+		else if (joint->theJointType == Joint::prismatic) {
+			// prismatic joint itself without extension
+			DrawingUtilNG::drawPrismZ(4., 4., 10., 0, 0, 0);
+			glColor3ub(0, 191, 255);	//deep sky blue
+			// extension of prismatic joint ("center" shifted half the joint's original length in the z-direction)
+			DrawingUtilNG::drawPrismZOffset(4., 4., joint->jointVariable, 0, 0, 5.);
+		}
+	}
 }

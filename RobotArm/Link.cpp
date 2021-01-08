@@ -28,3 +28,8 @@ void Link::draw_offset_prismatic(double offset)
 
 
 }
+
+void Link::assignLinkDirection(linkDirection theDirection)
+{
+	direction = theDirection;
+}

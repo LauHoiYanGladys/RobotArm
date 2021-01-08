@@ -2,6 +2,10 @@
 #include <math.h>
 #include <iostream>
 #include <Eigen/Dense>
+#include "Link.h"
+#include "Joint.h"
+#include "fssimplewindow.h"
+#include "DrawingUtilNG.h"
 
 using namespace Eigen;
 
@@ -22,6 +26,8 @@ public:
 	double jointAngle; // theta_fixed + theta
 
 	DHframe* parent; // pointer to previous DH frame
+	Link* link;
+	Joint* joint;
 	//Joint* movingJoint; // pointer to the joint that actually possess that joint variable
 public:
 	// constructor for the 0th DH frame
@@ -39,6 +45,8 @@ public:
 							0, 0, 1, 0,
 							0, 0, 0, 1;
 		parent = nullptr;
+		link = nullptr;
+		joint = nullptr;
 		//movingJoint = nullptr;
 		// the method used before implementing rotation about x-axis at drawing
 		//transformMatrix << 1, 0, 0, 0,
@@ -59,6 +67,8 @@ public:
 		jointAngle = theta_fixed + theta;
 		initialize();
 		parent = nullptr;
+		link = nullptr;
+		joint = nullptr;
 		//movingJoint = nullptr;
 
 	}; 
@@ -72,8 +82,14 @@ public:
 	// assigns parent DH frame (i.e. the previous DH frame)
 	void assignParentDHframe(DHframe* theParent);
 
-	// assigns moving joint (i.e. the joint that moves when the d or theta is changed)
-	/*void assignMovingJoint(Joint* theMovingJoint);*/
+	// assigns joint
+	void assignJoint(Joint* theJoint);
+
+	// assign link that follows one of its axis
+	void assignLink(Link* theLink, Link::linkDirection _direction);
+
+	// assign link direction
+	void assignLinkDirection(Link::linkDirection _direction) { link->direction = _direction; }
 
 	// gets world center
 	Vector3d getWorldCenter();
@@ -89,9 +105,6 @@ public:
 
 	// gets rotation part of a homogeneous transform matrix (left upper 3x3 block)
 	Matrix3d getRotation(Matrix4d theMatrix);
-
-	// updates the transformation matrix as joint variables change (note that link length and link twist do not change)
-	/*void updateTransformMatrix();*/
 
 	// update link length
 	void updateLinkLength(double newLinkLength);
@@ -117,9 +130,12 @@ public:
 	// recompute joint angle and update it
 	void updateJointAngle();
 
-	// update joint variable of moving joint
-	//void updateMovingJoint();
-
 	// print transform matrix (for debugging)
 	void printTransformMatrix();
+
+	// draws link
+	void drawLink();
+
+	// draws joint
+	void drawJoint();
 };

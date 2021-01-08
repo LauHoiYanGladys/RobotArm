@@ -34,7 +34,7 @@ void ViewManager::manage()
 
 	//do the 3D drawing
 	draw_environment3D();
-	theArm.moveArm(0, PI/2, 50.);
+	theArm.moveArm(PI/4, PI/4, 20.);
 	theArm.draw();
 
 	//do the 2D overlay drawing

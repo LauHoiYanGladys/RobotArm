@@ -14,11 +14,11 @@ public:
 	Link() {};
 
 	//constructor using only length and direction
-	Link(double _length, linkDirection _direction){
+	Link(double _length){
 		
 		//assign length & direction
 		length = _length;
-		direction = _direction;
+		direction = alongZ;
 
 	}
 
@@ -29,5 +29,7 @@ public:
 	// pointing in the z-direction, as prismatic joints always have links in that direction
 	void draw_offset_prismatic(double offset);
 
+	// assigns link direction
+	void assignLinkDirection(linkDirection theDirection);
 };
 
