@@ -20,7 +20,7 @@ public:
 	/*DHframe* frame;*/
 	Link* link;
 	//Joint* parent; // nullptr for the first joint
-	jointType theJointType;
+	jointType type;
 
 	// constructor taking DHframe as parameter
 	Joint(/*DHframe* theFrame, *//*double link_length*/) {
@@ -28,7 +28,7 @@ public:
 		//zAxis = theFrame->getZAxis();
 		/*parent = nullptr;*/
 		/*link = new Link(link_length, Link::alongZ);*/
-		theJointType = revolute;
+		type = revolute;
 		jointVariable = 0.;
 	};
 

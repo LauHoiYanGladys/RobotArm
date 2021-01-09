@@ -68,12 +68,12 @@ const double Joint::PI = 3.1415927;
 
 void Joint::setJointTypePrismatic()
 {
-	theJointType = prismatic;
+	type = prismatic;
 }
 
 void Joint::setJointTypeRevolute()
 {
-	theJointType = revolute;
+	type = revolute;
 }
 
 void Joint::updateJointVariable(double newJointVariable)

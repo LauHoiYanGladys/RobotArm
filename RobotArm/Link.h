@@ -23,11 +23,14 @@ public:
 	}
 
 	//draws a simple version of the link (cylinder) at (0,0,0) pointing in the desired direction
-	void draw_simple();
+	//if link is prismatic, will use the extension input to extend length of link in appropriate direction
+	void draw(double extension);
 
-	// draws the link (cylinder) of a prismatic joint at (0,0,z) where z is the extension of the joint
-	// pointing in the z-direction, as prismatic joints always have links in that direction
-	void draw_offset_prismatic(double offset);
+	//draws a simple version of the link (cylinder) at (0,0,0)
+	//void draw_simple();
+
+	// draws the link (cylinder) of a prismatic joint, with extension of the joint in the direction of the link
+	//void draw_offset_prismatic(double offset);
 
 	// assigns link direction
 	void assignLinkDirection(linkDirection theDirection);

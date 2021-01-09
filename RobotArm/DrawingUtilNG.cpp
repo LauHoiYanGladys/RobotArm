@@ -735,6 +735,11 @@ void DrawingUtilNG::drawCube(double x1, double y1, double z1,
 	}
 }
 
+void DrawingUtilNG::drawCube(double size)
+{
+	drawCube(-size / 2, size / 2, -size / 2, size / 2, -size / 2, size / 2);
+}
+
 bool DrawingUtilNG::buildStringFromFsInkey(int key, std::string& currString)
 {
 	bool shiftIsOn = FsGetKeyState(FSKEY_SHIFT);;

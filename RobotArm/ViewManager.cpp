@@ -14,8 +14,8 @@ void ViewManager::initialize()
 	textfont = textfont_temp;
 
 	theOrbiter.dist = 300;
-	theOrbiter.p = -0.135;
-	theOrbiter.h = 0.6;
+	theOrbiter.p = -0.350;
+	theOrbiter.h = -1.900;
 
 	theCamera.farZ = view_dist + theOrbiter.dist;
 	theArm.buildArm();
@@ -34,6 +34,8 @@ void ViewManager::manage()
 
 	//do the 3D drawing
 	draw_environment3D();
+	draw_goal();
+
 	theArm.moveArm(PI/4, PI/4, 20.);
 	theArm.draw();
 
@@ -49,6 +51,7 @@ void ViewManager::user_controls_read()
 	FsPollDevice();
 	int key = FsInkey();
 
+	//move camera around
 	if (FsGetKeyState(FSKEY_RIGHT))
 		theOrbiter.h += 0.005;
 	if (FsGetKeyState(FSKEY_LEFT))
@@ -57,6 +60,8 @@ void ViewManager::user_controls_read()
 		theOrbiter.p += 0.005;
 	if (FsGetKeyState(FSKEY_UP))
 		theOrbiter.p -= 0.005;
+
+	//move camera in & out
 	if (FsGetKeyState(FSKEY_F) && theOrbiter.dist > 0.5)
 		theOrbiter.dist /= 1.02;
 	if (FsGetKeyState(FSKEY_B) && theOrbiter.dist < theCamera.farZ * .8)
@@ -65,6 +70,22 @@ void ViewManager::user_controls_read()
 	//update camera views based on keyboard inputs above
 	theOrbiter.setUpCamera(theCamera);
 	theCamera.farZ = view_dist + theOrbiter.dist;
+
+	//move goal location
+	if (FsGetKeyState(FSKEY_W) && goal.x < mapsize)
+		goal.x += 0.5;
+	if (FsGetKeyState(FSKEY_S) && goal.x > -mapsize)
+		goal.x -= 0.5;
+	if (FsGetKeyState(FSKEY_D) && goal.y < mapsize)
+		goal.y += 0.5;
+	if (FsGetKeyState(FSKEY_A) && goal.y > -mapsize)
+		goal.y -= 0.5;
+
+	if (FsGetKeyState(FSKEY_E))
+		goal.z += 0.5;
+	if (FsGetKeyState(FSKEY_C))
+		goal.z -= 0.5;
+
 }
 
 void ViewManager::draw_environment3D()
@@ -94,14 +115,13 @@ void ViewManager::draw_environment3D()
 	glPolygonOffset(1, 1);
 
 	//quad for the ground color
-	int mapsize = 250;
-	int floor_offset = -1;
+	double floor_offset = -0.5;
 	glBegin(GL_QUADS);
 	glColor3ub(180, 255, 180);	//light green
-	glVertex3i(mapsize, floor_offset, -mapsize);
-	glVertex3i(-mapsize, floor_offset, -mapsize);
-	glVertex3i(-mapsize, floor_offset, mapsize);
-	glVertex3i(mapsize, floor_offset, mapsize);
+	glVertex3f(mapsize, floor_offset, -mapsize);
+	glVertex3f(-mapsize, floor_offset, -mapsize);
+	glVertex3f(-mapsize, floor_offset, mapsize);
+	glVertex3f(mapsize, floor_offset, mapsize);
 	glEnd();
 
 	//draw grid on the floor
@@ -109,23 +129,54 @@ void ViewManager::draw_environment3D()
 	glLineWidth(1);
 	glBegin(GL_LINES);
 
-	int grid_size = 25;
-	int mapcenter_x = 0;
-	int mapcenter_z = 0;
-	int grid_offset = 0;
+	double grid_size = 25;
+	double mapcenter_x = 0;
+	double mapcenter_z = 0;
+	double grid_offset = 0;
 
-	for (int x = mapcenter_x - mapsize; x <= mapcenter_x + mapsize; x += grid_size)
-		for (int z = mapcenter_z - mapsize; z <= mapcenter_z + mapsize; z += grid_size)
+	for (double x = mapcenter_x - mapsize; x <= mapcenter_x + mapsize; x += grid_size)
+		for (double z = mapcenter_z - mapsize; z <= mapcenter_z + mapsize; z += grid_size)
 		{
 			{
-				glVertex3i(x, grid_offset, x);
-				glVertex3i(x, grid_offset, z);
-				glVertex3i(x, grid_offset, z);
-				glVertex3i(z, grid_offset, z);
+				glVertex3f(x, grid_offset, x);
+				glVertex3f(x, grid_offset, z);
+				glVertex3f(x, grid_offset, z);
+				glVertex3f(z, grid_offset, z);
 			}
 		}
 	glEnd();
 
+}
+
+void ViewManager::draw_goal()
+{
+	double goal_size = 3; //size of goal position indicator
+	
+	//set up for 3D drawing
+	theCamera.setUpCameraProjection();
+	theCamera.setUpCameraTransformation();
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_POLYGON_OFFSET_FILL);
+	glPolygonOffset(1, 1);
+
+	//quad for the shadow on ground
+	double shadow_offset = 0;
+	glBegin(GL_QUADS);
+	glColor3ub(100, 200, 100);	//dark green
+	glVertex3f(goal_size * 1.05 / 2 + goal.x, shadow_offset, -goal_size * 1.05 / 2 + goal.y);
+	glVertex3f(-goal_size * 1.05 / 2 + goal.x, shadow_offset, -goal_size * 1.05 / 2 + goal.y);
+	glVertex3f(-goal_size * 1.05 / 2 + goal.x, shadow_offset, goal_size * 1.05 / 2 + goal.y);
+	glVertex3f(goal_size * 1.05 / 2 + goal.x, shadow_offset, goal_size * 1.05 / 2 + goal.y);
+	glEnd();
+
+	//draw cube for showing goal position in 3D
+	glPushMatrix();
+	glTranslatef(goal.x, goal.z, goal.y);	//order of x,y,z is reoriented to account for OpenGL conventions
+
+	glColor3ub(0, 255, 0);	//bright green
+	DrawingUtilNG::drawCube(goal_size);
+
+	glPopMatrix();
 }
 
 void ViewManager::draw_overlay2D()
@@ -152,31 +203,51 @@ void ViewManager::draw_overlay2D()
 	datastring << "x:" << theCamera.x;
 	data = datastring.str();
 	textfont.drawText(data, 10, win_height - 120, .32);
-
 	datastring.str("");
+
 	datastring << "y:" << theCamera.y;
 	data = datastring.str();
 	textfont.drawText(data, 10, win_height - 100, .32);
-
 	datastring.str("");
+
 	datastring << "z:" << theCamera.z;
 	data = datastring.str();
 	textfont.drawText(data, 10, win_height - 80, .32);
-
 	datastring.str("");
+
 	datastring << fixed << setprecision(3);
 	datastring << "h:" << theOrbiter.h;
 	data = datastring.str();
 	textfont.drawText(data, 10, win_height - 60, .32);
-
 	datastring.str("");
+
 	datastring << "p:" << theOrbiter.p;
 	data = datastring.str();
 	textfont.drawText(data, 10, win_height - 40, .32);
-
 	datastring.str("");
+
 	datastring << "d:" << theOrbiter.dist;
 	data = datastring.str();
 	textfont.drawText(data, 10, win_height - 20, .32);
+	datastring.str("");
+
+	//goal position - lower right
+	textfont.drawText("goal pos", win_width - 130, win_height - 85, .31);
+
+	datastring << fixed << setprecision(2);
+	datastring << "x:" << goal.x;
+	data = datastring.str();
+	textfont.drawText(data, win_width - 130, win_height - 60, .32);
+	datastring.str("");
+
+	datastring << "y:" << goal.y;
+	data = datastring.str();
+	textfont.drawText(data, win_width - 130, win_height - 40, .32);
+	datastring.str("");
+
+	datastring << "z:" << goal.z;
+	data = datastring.str();
+	textfont.drawText(data, win_width - 130, win_height - 20, .32);
+	datastring.str("");
 
 }

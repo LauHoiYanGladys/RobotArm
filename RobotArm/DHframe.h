@@ -133,6 +133,12 @@ public:
 	// print transform matrix (for debugging)
 	void printTransformMatrix();
 
+	// draws link & joint associated with frame
+	void draw() {
+		drawLink();
+		drawJoint();
+	}
+
 	// draws link
 	void drawLink();
 

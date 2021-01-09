@@ -41,11 +41,8 @@ void Arm::draw()
 		Vector3d axisRotate = theAngleAxis.axis();
 		glRotatef(angleRotate, axisRotate(0), axisRotate(1), axisRotate(2));
 
-		//drawing of the joint
-		frame->drawJoint();
-
-		//drawing of the link
-		frame->drawLink();
+		//drawing of the frame
+		frame->draw();
 
 		// restore original matrix state
 		glPopMatrix();
