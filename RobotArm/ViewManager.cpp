@@ -15,7 +15,7 @@ void ViewManager::initialize()
 
 	theOrbiter.dist = 300;
 	theOrbiter.p = -0.350;
-	theOrbiter.h = -1.900;
+	theOrbiter.h = 0.;
 
 	theCamera.farZ = view_dist + theOrbiter.dist;
 	theArm.buildArm();
@@ -36,7 +36,9 @@ void ViewManager::manage()
 	draw_environment3D();
 	draw_goal();
 
-	theArm.moveArm(PI/4, PI/4, 20.);
+	/*theArm.moveArm(PI/4, PI/4, 20.);*/
+	/*controlArm();*/
+	/*theArm.moveArm(PI / 4);*/
 	theArm.draw();
 
 	//do the 2D overlay drawing
@@ -70,21 +72,24 @@ void ViewManager::user_controls_read()
 	//update camera views based on keyboard inputs above
 	theOrbiter.setUpCamera(theCamera);
 	theCamera.farZ = view_dist + theOrbiter.dist;
-
-	//move goal location
-	if (FsGetKeyState(FSKEY_W) && goal.x < mapsize)
+		
+	if (FsGetKeyState(FSKEY_D) && goal.x < mapsize)
 		goal.x += 0.5;
-	if (FsGetKeyState(FSKEY_S) && goal.x > -mapsize)
+	if (FsGetKeyState(FSKEY_A) && goal.x > -mapsize)
 		goal.x -= 0.5;
-	if (FsGetKeyState(FSKEY_D) && goal.y < mapsize)
+	if (FsGetKeyState(FSKEY_S) && goal.y < mapsize)
 		goal.y += 0.5;
-	if (FsGetKeyState(FSKEY_A) && goal.y > -mapsize)
+	if (FsGetKeyState(FSKEY_W) && goal.y > -mapsize)
 		goal.y -= 0.5;
 
 	if (FsGetKeyState(FSKEY_E))
 		goal.z += 0.5;
 	if (FsGetKeyState(FSKEY_C))
 		goal.z -= 0.5;
+
+	// compute IK on press of space bar
+	if (key == FSKEY_SPACE)
+		controlArm();
 
 }
 
@@ -250,4 +255,22 @@ void ViewManager::draw_overlay2D()
 	textfont.drawText(data, win_width - 130, win_height - 20, .32);
 	datastring.str("");
 
+}
+
+void ViewManager::controlArm()
+{
+	Vector3d newJointVariables;
+	// compute IK from current joint variables
+	InverseKinematics theIK(goal.x, goal.y, goal.z, &theArm);
+	theIK.getIKAnalytical();
+	/*theIK.getIK();*/
+	theIK.getResult(newJointVariables);
+
+	/*std::cout << "newJointVariables are " << newJointVariables << std::endl;*/
+
+	// draw arm with updated joint variables
+	// the negative sign needed before the first joint, probably due to non-right-hand coordinate system of of openGL
+	theArm.moveArm(-newJointVariables(0), newJointVariables(1), newJointVariables(2));
+	theArm.updateTestFrames(-newJointVariables(0), newJointVariables(1), newJointVariables(2));
+	/*theArm.draw();*/
 }

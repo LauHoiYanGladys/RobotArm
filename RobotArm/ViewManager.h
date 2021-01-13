@@ -3,12 +3,14 @@
 #include "Camera3D.h"
 #include "OrbitingViewer.h"
 #include "GraphicFont.h"
+#include "InverseKinematics.h"
 
 class ViewManager
 {
 public:
 	static const double PI;
 	Arm theArm;
+	//InverseKinematics theIK;
 	Camera3D theCamera;
 	OrbitingViewer theOrbiter;
 	CourierNewFont textfont;
@@ -20,11 +22,13 @@ public:
 
 	int mapsize = 250;				//size of environment map
 
-	DrawingUtilNG::vertexF goal = { 0,0,0 };	//goal position for end effector
+	DrawingUtilNG::vertexF goal = { 50,10,30 };	//goal position for end effector
 
 	//constructor calls the initialize function
-	ViewManager() {
+	ViewManager()/*: theIK(0, 0, 0, &theArm)*/  {
+		
 		initialize();
+		/*theIK = InverseKinematics(0, 0, 0, &theArm);*/
 	}
 
 	//initial setup
@@ -45,5 +49,8 @@ public:
 
 	//draws 2D HUD overlay (text, etc)
 	void draw_overlay2D();
+
+	// move arm according to IK results
+	void controlArm();
 };
 

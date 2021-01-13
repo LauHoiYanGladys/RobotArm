@@ -148,6 +148,7 @@
     <ClCompile Include="DrawingUtilNG.cpp" />
     <ClCompile Include="fssimplewindow.cpp" />
     <ClCompile Include="GraphicFont.cpp" />
+    <ClCompile Include="InverseKinematics.cpp" />
     <ClCompile Include="Joint.cpp" />
     <ClCompile Include="Link.cpp" />
     <ClCompile Include="OrbitingViewer.cpp" />
@@ -162,6 +163,7 @@
     <ClInclude Include="DrawingUtilNG.h" />
     <ClInclude Include="fssimplewindow.h" />
     <ClInclude Include="GraphicFont.h" />
+    <ClInclude Include="InverseKinematics.h" />
     <ClInclude Include="Joint.h" />
     <ClInclude Include="Link.h" />
     <ClInclude Include="OrbitingViewer.h" />
