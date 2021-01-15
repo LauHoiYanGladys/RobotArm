@@ -128,7 +128,7 @@ void InverseKinematics::update()
 	/*std::cout << "test joint variable " <<  jointVariableIndex << " updated from " 
 		<< testJointVariables << " to " << new_testJointVariables << std::endl;*/
 
-	std::cout << "Update done" << std::endl;
+	/*std::cout << "Update done" << std::endl;*/
 }
 
 void InverseKinematics::getIK()
@@ -146,16 +146,19 @@ void InverseKinematics::getIK()
 
 		counter++;
 
-		std::cout << "original test joint variables are " << testJointVariables << std::endl;
-		std::cout << "new test joint variables are " << new_testJointVariables << std::endl;
+		//std::cout << "original test joint variables are " << testJointVariables << std::endl;
+		//std::cout << "new test joint variables are " << new_testJointVariables << std::endl;
 
-		
+		/*std::cout << "Iteration " << counter << std::endl;*/
+
 		updateAmount = costGradient.norm();
 		// early terminate while loop if new cost is low or amount of update is small
-		if (theNewCost < 1 || updateAmount < 10) {
+		if (theNewCost < 1/* || updateAmount < 10*/) {
 			std::cout << "Gradient descend early ended on iteration " << counter << std::endl;
 			std::cout << "Ending new cost is " << theNewCost << std::endl;
 			std::cout << "Ending update amount is " << updateAmount << std::endl;
+			testJointVariables(2) = getPrismaticJointVar(); // correct prismatic joint variable computed, independent of the gradient descent
+			std::cout << "Final joint variables are " << testJointVariables;
 			return;
 
 		}
@@ -165,9 +168,13 @@ void InverseKinematics::getIK()
 
 	} while (counter < maxIteration);
 	
+
+	testJointVariables(2) = getPrismaticJointVar(); // correct prismatic joint variable computed, independent of the gradient descent
+
 	std::cout << "Gradient descend ended after max iteration " << counter << std::endl;
 	std::cout << "Ending new cost is " << theNewCost << std::endl;
-	std::cout << "IK computation completed" << std::endl;
+	std::cout << "Ending update amount is " << updateAmount << std::endl;
+	std::cout << "Final joint variables are " << testJointVariables;
 	
 }
 
@@ -190,25 +197,59 @@ void InverseKinematics::getIKAnalytical()
 
 double InverseKinematics::computeCost(costType theCostType)
 {
-	Vector3d FK;
-	
+	Vector3d FK_third;
+	Vector3d secondLinkDir; // vector along the second link
+	Vector3d goalDir; // vector between the second joint and goal
+	double angleDeviation;
+	Vector3d goalAdjusted; // trying to make x always positive
 	double cost = 0.;
 	if (theCostType == costType::currCost) {
 		theArm->updateTestFrames(testJointVariables(0), testJointVariables(1), testJointVariables(2));
-		FK = theArm->compute_test_FK(4); // compute the original FK
-		//FK = theArm->compute_test_FK(2); // compute the original FK of one-revolute arm (debugging)
-		cost = 0.5 * (FK - goal).dot(FK - goal);
+		FK_third = theArm->compute_test_FK(3); // compute the original FK to the THIRD DH frame (i.e. frame at the end of 2nd link, not end-effector frame)
 
+		//FK = theArm->compute_test_FK(2); // compute the original FK of one-revolute arm (debugging)
+
+		// penalize deviation from zero in the angle between the second link and the vector between the second joint and goal
+		secondLinkDir = theArm->theFrames[2]->getZAxisWorldTest();
+		goalAdjusted = goal;
+		if (goal(0) < 0)
+			goalAdjusted(0) = -goal(0);
+		goalDir = goalAdjusted - FK_third;
+
+		angleDeviation = acos((secondLinkDir.dot(goalDir)) / (secondLinkDir.norm() * goalDir.norm())); // acos returns values in the interval [0,pi] radians
+
+		cost = angleDeviation * 1000;
+
+		// old method of penalizing deviation in position
+		/*cost = 0.5 * (FK - goal).dot(FK - goal);*/
+		
 		// wrong cost
 		/*cost = pow(goal(0) - FK(0), 2) + pow(goal(1) - FK(1), 2) + pow(goal(2) - FK(2), 2);*/
 	}
 	else if (theCostType == costType::newCost) {
 	
 		theArm->updateTestFrames(new_testJointVariables(0), new_testJointVariables(1), new_testJointVariables(2));
-		FK = theArm->compute_test_FK(4); // compute the new FK
+		FK_third = theArm->compute_test_FK(3); // compute the original FK to the THIRD DH frame (i.e. frame at the end of 2nd link, not end-effector frame)
+
 		//FK = theArm->compute_test_FK(2); // compute the original FK of one-revolute arm (debugging)
 
-		cost = 0.5 * (FK - goal).dot(FK - goal);
+		// penalize deviation from zero in the angle between the second link and the vector between the second joint and goal
+		secondLinkDir = theArm->theFrames[2]->getZAxisWorldTest();
+		goalAdjusted = goal;
+		if (goal(0) < 0)
+			goalAdjusted(0) = -goal(0);
+		goalDir = goalAdjusted - FK_third;
+
+		angleDeviation = acos((secondLinkDir.dot(goalDir)) / (secondLinkDir.norm() * goalDir.norm())); // acos returns values in the interval [0,pi] radians
+
+		/*std::cout << "secondLinkDir is " << secondLinkDir << std::endl;
+		std::cout << "goalDir is " << goalDir << std::endl;
+		std::cout << "angle deviation is " << angleDeviation << std::endl;*/
+
+		cost = angleDeviation * 1000;
+
+		// old method of penalizing deviation in position
+		/*cost = 0.5 * (FK - goal).dot(FK - goal);*/
 
 		// wrong cost
 		/*cost = pow(goal(0) - FK(0), 2) + pow(goal(1) - FK(1), 2) + pow(goal(2) - FK(2), 2);*/
@@ -235,7 +276,7 @@ void InverseKinematics::computeJacobian()
 	}
 	/*jacobian = jacobianCols[0];*/ //one-revolute arm (debugging)
 	jacobian << jacobianCols[0], jacobianCols[1], jacobianCols[2];
-	std::cout << "jacobian is " << jacobian << std::endl;
+	/*std::cout << "jacobian is " << jacobian << std::endl;*/
 }
 
 Vector3d InverseKinematics::computeJacobianCol(int jointVariableIndex)
@@ -342,9 +383,10 @@ Vector3d InverseKinematics::computeJacobianColRev(int jointVariableIndex)
 	FK = theArm->compute_test_FK(4);
 	/*FK = theArm->compute_test_FK(2);*/ // single-revolute joint arm (for debugging)
 	
-	std::cout << "The parent frame z-axis is " << theFrame->parent->getZAxisWorldTest();
+	/*std::cout << "The parent frame z-axis is " << theFrame->parent->getZAxisWorldTest();
 	std::cout << "the vector from frame origin to end-effector is" << FK - currFK;
-	std::cout << "the cross product is" << (theFrame->parent->getZAxisWorldTest()).cross(FK - currFK);
+	std::cout << "the cross product is" << (theFrame->parent->getZAxisWorldTest()).cross(FK - currFK);*/
+
 	jacobianCol = (theFrame->parent->getZAxisWorldTest()).cross(FK - currFK);
 	return jacobianCol;
 }
@@ -371,4 +413,16 @@ Vector3d InverseKinematics::computeJacobianColPris(int jointVariableIndex)
 void InverseKinematics::getResult(Vector3d& result)
 {
 	result = testJointVariables;
+}
+
+double InverseKinematics::getPrismaticJointVar()
+{
+	double res;
+	double thirdLinkLength;
+	theArm->updateTestFrames(testJointVariables(0), testJointVariables(1), testJointVariables(2));
+	thirdLinkLength = theArm->theFrames[3]->link->length;
+	Vector3d FK_thirdFrame = theArm->compute_test_FK(3); // compute the original FK
+	res = std::max((goal - FK_thirdFrame).norm() - thirdLinkLength,0.); // constrain prismatic joint length to be >= 0
+
+	return res;
 }

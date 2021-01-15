@@ -262,15 +262,18 @@ void ViewManager::controlArm()
 	Vector3d newJointVariables;
 	// compute IK from current joint variables
 	InverseKinematics theIK(goal.x, goal.y, goal.z, &theArm);
-	theIK.getIKAnalytical();
-	/*theIK.getIK();*/
+	/*theIK.getIKAnalytical();*/
+	theIK.getIK();
 	theIK.getResult(newJointVariables);
 
 	/*std::cout << "newJointVariables are " << newJointVariables << std::endl;*/
 
 	// draw arm with updated joint variables
-	// the negative sign needed before the first joint, probably due to non-right-hand coordinate system of of openGL
+	// the negative sign needed before the first joint to prevent reflection about the horizontal axis, probably due to non-right-hand coordinate system of of openGL
 	theArm.moveArm(-newJointVariables(0), newJointVariables(1), newJointVariables(2));
-	theArm.updateTestFrames(-newJointVariables(0), newJointVariables(1), newJointVariables(2));
+
+	// The test frames, though, need to store the correct joint variables for the next IK to start from the correct joint configuration
+	// thus no negative sign in front of the first joint variable
+	theArm.updateTestFrames(newJointVariables(0), newJointVariables(1), newJointVariables(2)); // to be extra safe that it's updated
 	/*theArm.draw();*/
 }

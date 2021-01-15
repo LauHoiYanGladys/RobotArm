@@ -208,7 +208,7 @@ void Arm::updateTestFrames(double newJointVariable1, double newJointVariable2, d
 	theFrames[1]->update_test_theta(newJointVariable1);
 	theFrames[2]->update_test_theta(newJointVariable2);
 	theFrames[4]->update_test_d(newJointVariable3);
-	std::cout << "Test frames updated" << std::endl;
+	/*std::cout << "Test frames updated" << std::endl;*/
 }
 
 double Arm::getTestJointVariable(DHframe* theFrame)

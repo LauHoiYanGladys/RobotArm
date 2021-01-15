@@ -2,6 +2,7 @@
 #include <Eigen/Dense>
 #include "DHframe.h"
 #include "Arm.h"
+#include "Link.h"
 
 class InverseKinematics {
 private:
@@ -55,7 +56,7 @@ public:
 	// update all joint variable parameters in gradient descent
 	void update();
 
-	// performs gradient descent to find IK
+	// performs gradient descent to find IK for first two revolute joints, then directly computes the correct prismatic joint variable
 	void getIK();
 	
 	// gets analytical IK
@@ -81,4 +82,7 @@ public:
 	// sets the result to the function parameters that are called by reference for drawing
 	void getResult(Vector3d&/* double& */result);
 	
+	// get the correct prismatic joint variable after arm is correctly oriented (i.e. first two joint angles optimized)
+	double getPrismaticJointVar();
+
 };
