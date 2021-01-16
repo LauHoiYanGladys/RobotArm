@@ -22,22 +22,22 @@ InverseKinematics::InverseKinematics(double x, double y, double z, Arm* inputArm
 	alpha = 0.00001; // revolute joint learning rate
 	alphaPris = 0.1; // prismatic joint need larger learning rate because its values are inherently larger than those of revolute
 
-	maxIteration = 300;
-	stopThreshold = 0.1;
+	maxIteration = 700;
+	stopThreshold = 15;
 	delta = 0.001;
 }
 
 void/*Vector3d*//*double*/ InverseKinematics::computeCostGradient()
 {
 	
-	Vector3d FK;
+	Vector3d FK_third;
 	theArm->updateTestFrames(testJointVariables(0), testJointVariables(1), testJointVariables(2));
 	//FK = theArm->compute_test_FK(2); // end effector frame is 2nd frame (single-revolute joint arm (for debugging))
-	FK = theArm->compute_test_FK(4); // end effector frame is 4th frame
-	computeJacobian();
-	/*costGradient = jacobian.dot(FK - goal);*/ //single-revolute joint arm (for debugging)
-	costGradient = (jacobian.transpose()) * (FK - goal);
-	/*std::cout << "cost gradient is " << costGradient << std::endl;*/
+
+	// take partial derivative of the cost function
+	costGradient(0) = differentiateCost(costType::currCost,1);
+	costGradient(1) = differentiateCost(costType::currCost, 2);
+	costGradient(2) = 0.; // dummy for the third joint variable
 
 }
 
@@ -148,15 +148,12 @@ void InverseKinematics::getIK()
 
 		//std::cout << "original test joint variables are " << testJointVariables << std::endl;
 		//std::cout << "new test joint variables are " << new_testJointVariables << std::endl;
-
 		/*std::cout << "Iteration " << counter << std::endl;*/
 
-		updateAmount = costGradient.norm();
 		// early terminate while loop if new cost is low or amount of update is small
-		if (theNewCost < 1/* || updateAmount < 10*/) {
+		if (theNewCost < stopThreshold) {
 			std::cout << "Gradient descend early ended on iteration " << counter << std::endl;
 			std::cout << "Ending new cost is " << theNewCost << std::endl;
-			std::cout << "Ending update amount is " << updateAmount << std::endl;
 			testJointVariables(2) = getPrismaticJointVar(); // correct prismatic joint variable computed, independent of the gradient descent
 			std::cout << "Final joint variables are " << testJointVariables;
 			return;
@@ -173,7 +170,6 @@ void InverseKinematics::getIK()
 
 	std::cout << "Gradient descend ended after max iteration " << counter << std::endl;
 	std::cout << "Ending new cost is " << theNewCost << std::endl;
-	std::cout << "Ending update amount is " << updateAmount << std::endl;
 	std::cout << "Final joint variables are " << testJointVariables;
 	
 }
@@ -197,68 +193,111 @@ void InverseKinematics::getIKAnalytical()
 
 double InverseKinematics::computeCost(costType theCostType)
 {
-	Vector3d FK_third;
-	Vector3d secondLinkDir; // vector along the second link
-	Vector3d goalDir; // vector between the second joint and goal
 	double angleDeviation;
-	Vector3d goalAdjusted; // trying to make x always positive
 	double cost = 0.;
 	if (theCostType == costType::currCost) {
 		theArm->updateTestFrames(testJointVariables(0), testJointVariables(1), testJointVariables(2));
-		FK_third = theArm->compute_test_FK(3); // compute the original FK to the THIRD DH frame (i.e. frame at the end of 2nd link, not end-effector frame)
-
-		//FK = theArm->compute_test_FK(2); // compute the original FK of one-revolute arm (debugging)
-
-		// penalize deviation from zero in the angle between the second link and the vector between the second joint and goal
-		secondLinkDir = theArm->theFrames[2]->getZAxisWorldTest();
-		goalAdjusted = goal;
-		if (goal(0) < 0)
-			goalAdjusted(0) = -goal(0);
-		goalDir = goalAdjusted - FK_third;
-
-		angleDeviation = acos((secondLinkDir.dot(goalDir)) / (secondLinkDir.norm() * goalDir.norm())); // acos returns values in the interval [0,pi] radians
-
-		cost = angleDeviation * 1000;
-
-		// old method of penalizing deviation in position
-		/*cost = 0.5 * (FK - goal).dot(FK - goal);*/
-		
-		// wrong cost
-		/*cost = pow(goal(0) - FK(0), 2) + pow(goal(1) - FK(1), 2) + pow(goal(2) - FK(2), 2);*/
 	}
 	else if (theCostType == costType::newCost) {
-	
 		theArm->updateTestFrames(new_testJointVariables(0), new_testJointVariables(1), new_testJointVariables(2));
-		FK_third = theArm->compute_test_FK(3); // compute the original FK to the THIRD DH frame (i.e. frame at the end of 2nd link, not end-effector frame)
-
-		//FK = theArm->compute_test_FK(2); // compute the original FK of one-revolute arm (debugging)
-
-		// penalize deviation from zero in the angle between the second link and the vector between the second joint and goal
-		secondLinkDir = theArm->theFrames[2]->getZAxisWorldTest();
-		goalAdjusted = goal;
-		if (goal(0) < 0)
-			goalAdjusted(0) = -goal(0);
-		goalDir = goalAdjusted - FK_third;
-
-		angleDeviation = acos((secondLinkDir.dot(goalDir)) / (secondLinkDir.norm() * goalDir.norm())); // acos returns values in the interval [0,pi] radians
-
-		/*std::cout << "secondLinkDir is " << secondLinkDir << std::endl;
-		std::cout << "goalDir is " << goalDir << std::endl;
-		std::cout << "angle deviation is " << angleDeviation << std::endl;*/
-
-		cost = angleDeviation * 1000;
-
-		// old method of penalizing deviation in position
-		/*cost = 0.5 * (FK - goal).dot(FK - goal);*/
-
-		// wrong cost
-		/*cost = pow(goal(0) - FK(0), 2) + pow(goal(1) - FK(1), 2) + pow(goal(2) - FK(2), 2);*/
-
-		// restore the original test joint variable (just to be extra safe)
-		theArm->updateTestFrames(testJointVariables(0), testJointVariables(1), testJointVariables(2));
-
 	}
+
+	angleDeviation = computeAngleDeviation();
+	cost = angleDeviation * 1000;
+	// restore the original test joint variable (just to be extra safe)
+	theArm->updateTestFrames(testJointVariables(0), testJointVariables(1), testJointVariables(2));
 	return cost;
+}
+
+double InverseKinematics::differentiateCost(costType theCostType, int jointVariableNum)
+{
+	double angleDeviation_plus;
+	double angleDeviation_minus;
+	double cost_plus = 0.;
+	double cost_minus = 0.;
+	double res;
+	if (theCostType == costType::currCost) {
+		if (jointVariableNum == 1) {
+			// first joint var, plus
+			theArm->updateTestFrames(testJointVariables(0) + delta, testJointVariables(1), testJointVariables(2));
+			angleDeviation_plus = computeAngleDeviation();
+			cost_plus = angleDeviation_plus * 1000;
+
+			// first joint var, minus
+			theArm->updateTestFrames(testJointVariables(0) - delta, testJointVariables(1), testJointVariables(2));
+			angleDeviation_minus = computeAngleDeviation();
+			cost_minus = angleDeviation_minus * 1000;
+
+		}
+		else if (jointVariableNum == 2) {
+			// first joint var, plus
+			theArm->updateTestFrames(testJointVariables(0), testJointVariables(1) + delta, testJointVariables(2));
+			angleDeviation_plus = computeAngleDeviation();
+			cost_plus = angleDeviation_plus * 1000;
+
+			// first joint var, minus
+			theArm->updateTestFrames(testJointVariables(0), testJointVariables(1) - delta, testJointVariables(2));
+			angleDeviation_minus = computeAngleDeviation();
+			cost_minus = angleDeviation_minus * 1000;
+
+		}
+		else
+			std::cout << "invalid jointVariableNum, differentiation failed" << std::endl;
+		
+	}
+	else if (theCostType == costType::newCost) {
+		if (jointVariableNum == 1) {
+			// first joint var, plus
+			theArm->updateTestFrames(testJointVariables(0) + delta, testJointVariables(1), testJointVariables(2));
+			angleDeviation_plus = computeAngleDeviation();
+			cost_plus = angleDeviation_plus * 1000;
+
+			// first joint var, minus
+			theArm->updateTestFrames(testJointVariables(0) - delta, testJointVariables(1), testJointVariables(2));
+			angleDeviation_minus = computeAngleDeviation();
+			cost_minus = angleDeviation_minus * 1000;
+		}
+		else if (jointVariableNum == 2) {
+			// first joint var, plus
+			theArm->updateTestFrames(testJointVariables(0), testJointVariables(1) + delta, testJointVariables(2));
+			angleDeviation_plus = computeAngleDeviation();
+			cost_plus = angleDeviation_plus * 1000;
+
+			// first joint var, minus
+			theArm->updateTestFrames(testJointVariables(0), testJointVariables(1) - delta, testJointVariables(2));
+			angleDeviation_minus = computeAngleDeviation();
+			cost_minus = angleDeviation_minus * 1000;
+		}
+		else
+			std::cout << "invalid jointVariableNum, differentiation failed" << std::endl;
+		
+	}
+	res = (cost_plus - cost_minus) / (2 * delta); // compute result
+	theArm->updateTestFrames(testJointVariables(0), testJointVariables(1), testJointVariables(2)); // restore values
+	return res;
+}
+
+double InverseKinematics::computeAngleDeviation()
+{
+	double angleDeviation;
+	Vector3d FK_third;
+	Vector3d secondLinkDir; // vector along the second link
+	Vector3d goalDir; // vector between the second joint and goal
+
+	FK_third = theArm->compute_test_FK(3); // compute the original FK to the THIRD DH frame (i.e. frame at the end of 2nd link, not end-effector frame)
+
+	// penalize deviation from zero in the angle between the second link and the vector between the second joint and goal
+	secondLinkDir = theArm->theFrames[2]->getZAxisWorldTest();
+	goalDir = goal - FK_third;
+
+	/*angleDeviation = atan2(goalDir.cross(secondLinkDir).norm(), goalDir.dot(secondLinkDir));*/
+	angleDeviation = acos((secondLinkDir.dot(goalDir)) / (secondLinkDir.norm() * goalDir.norm())); // acos returns values in the interval [0,pi] radians
+
+	/*std::cout << "secondLinkDir is " << secondLinkDir << std::endl;
+	std::cout << "goalDir is " << goalDir << std::endl;
+	std::cout << "angle deviation is " << angleDeviation << std::endl;*/
+
+	return angleDeviation;
 }
 
 void InverseKinematics::computeJacobian()

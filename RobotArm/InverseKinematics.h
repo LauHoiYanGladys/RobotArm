@@ -65,6 +65,12 @@ public:
 	// evaluates the cost function at either current or updated variable values
 	double computeCost(costType theCostType);
 	
+	// take partial derivative of the cost function
+	double differentiateCost(costType theCostType, int jointVariableNum);
+
+	// compute angle error
+	double computeAngleDeviation();
+
 	// computes Jacobian with the current joint variables
 	void computeJacobian();
 
