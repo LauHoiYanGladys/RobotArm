@@ -30,7 +30,6 @@ InverseKinematics::InverseKinematics(double x, double y, double z, Arm* inputArm
 void/*Vector3d*//*double*/ InverseKinematics::computeCostGradient()
 {
 	
-	Vector3d FK_third;
 	theArm->updateTestFrames(testJointVariables(0), testJointVariables(1), testJointVariables(2));
 	//FK = theArm->compute_test_FK(2); // end effector frame is 2nd frame (single-revolute joint arm (for debugging))
 
@@ -280,15 +279,15 @@ double InverseKinematics::differentiateCost(costType theCostType, int jointVaria
 double InverseKinematics::computeAngleDeviation()
 {
 	double angleDeviation;
-	Vector3d FK_third;
+	Vector3d FK_second;
 	Vector3d secondLinkDir; // vector along the second link
 	Vector3d goalDir; // vector between the second joint and goal
 
-	FK_third = theArm->compute_test_FK(3); // compute the original FK to the THIRD DH frame (i.e. frame at the end of 2nd link, not end-effector frame)
+	FK_second = theArm->compute_test_FK(2); // compute the original FK to the SECOND DH frame (i.e. frame at the second joint)
 
 	// penalize deviation from zero in the angle between the second link and the vector between the second joint and goal
 	secondLinkDir = theArm->theFrames[2]->getZAxisWorldTest();
-	goalDir = goal - FK_third;
+	goalDir = goal - FK_second;
 
 	/*angleDeviation = atan2(goalDir.cross(secondLinkDir).norm(), goalDir.dot(secondLinkDir));*/
 	angleDeviation = acos((secondLinkDir.dot(goalDir)) / (secondLinkDir.norm() * goalDir.norm())); // acos returns values in the interval [0,pi] radians
