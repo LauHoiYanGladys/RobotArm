@@ -65,8 +65,11 @@ public:
 	// evaluates the cost function at either current or updated variable values
 	double computeCost(costType theCostType);
 	
+	// evaluates the cost function at the provided joint variables
+	double computeCost(double jointVariable1, double jointVariable2, double jointVariable3);
+
 	// take partial derivative of the cost function
-	double differentiateCost(costType theCostType, int jointVariableNum);
+	double differentiateCost(/*costType theCostType, */int jointVariableNum);
 
 	// compute angle error
 	double computeAngleDeviation();
@@ -90,5 +93,8 @@ public:
 	
 	// get the correct prismatic joint variable after arm is correctly oriented (i.e. first two joint angles optimized)
 	double getPrismaticJointVar();
+
+	// gets distance from the current end-effector position and the goal position
+	double getDistance();
 
 };
