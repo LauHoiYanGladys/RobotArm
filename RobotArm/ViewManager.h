@@ -1,4 +1,6 @@
 #pragma once
+
+#include <chrono>
 #include "Arm.h"
 #include "Camera3D.h"
 #include "OrbitingViewer.h"
@@ -23,6 +25,10 @@ public:
 	int mapsize = 250;				//size of environment map
 
 	DrawingUtilNG::vertexF goal = { 50,10,30 };	//goal position for end effector
+
+	//timestamp of the last time the arm calculated its position
+	std::chrono::system_clock::time_point prevArmMoveTime = std::chrono::system_clock::now();
+	double moveTimeThresh = 20;   //how much time (in ms) the arm will wait until next move calculation
 
 	//constructor calls the initialize function
 	ViewManager()/*: theIK(0, 0, 0, &theArm)*/  {

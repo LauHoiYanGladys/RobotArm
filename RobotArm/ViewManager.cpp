@@ -28,6 +28,16 @@ void ViewManager::manage()
 	//read keyboard/mouse inputs
 	user_controls_read();
 
+	//move arm if enough time has passed between calcs
+	auto currentTime = std::chrono::system_clock::now();
+	double elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds> (currentTime - prevArmMoveTime).count();
+	//cout << "elapsed time: " << elapsedTime << '\n';
+	if (elapsedTime > moveTimeThresh) {
+
+		controlArm();
+		prevArmMoveTime = currentTime;
+	}
+
 	//start drawing
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	glViewport(0, 0, win_width, win_height);
