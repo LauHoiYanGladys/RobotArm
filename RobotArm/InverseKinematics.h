@@ -1,5 +1,6 @@
 #pragma once
 #include <Eigen/Dense>
+#include <vector>
 #include "DHframe.h"
 #include "Arm.h"
 #include "Link.h"
@@ -24,7 +25,8 @@ private:
 	Matrix3d jacobian;
 	/*Vector3d jacobian;
 	double costGradient;*/
-	Vector3d costGradient;
+	/*Vector3d costGradient;*/
+	std::vector<double> costGradient;
 	Arm* theArm;
 	/*enum jointNumber { first, second, third };*/
 	enum class costType { currCost, newCost };
@@ -46,7 +48,7 @@ public:
 	// constructor
 	InverseKinematics(double x, double y, double z, Arm* inputArm);
 	
-	// compute cost gradient by jacobian^T * (FK to end effector - goal position);
+	// compute cost gradient by (FK to end effector - goal position).norm();
 	void computeCostGradient();
 	/*double computeCostGradient();*/
 
@@ -56,7 +58,7 @@ public:
 	// update all joint variable parameters in gradient descent
 	void update();
 
-	// performs gradient descent to find IK for first two revolute joints, then directly computes the correct prismatic joint variable
+	// performs gradient descent to find IK
 	void getIK();
 	
 	// gets analytical IK
@@ -68,8 +70,14 @@ public:
 	// evaluates the cost function at the provided joint variables
 	double computeCost(double jointVariable1, double jointVariable2, double jointVariable3);
 
-	// take partial derivative of the cost function
-	double differentiateCost(/*costType theCostType, */int jointVariableNum);
+	// evaluates the cost function at the joint variables provided in a vector
+	double computeCost(std::vector<double> jointVariables);
+
+	// take partial derivative of the cost function of a certain joint
+	double differentiateCost(int jointVariableNum);
+
+	// take partial derivative of the cost function of all joints
+	std::vector<double> differentiateCost();
 
 	// compute angle error
 	double computeAngleDeviation();
@@ -89,12 +97,17 @@ public:
 	Vector3d computeJacobianColPris(int jointVariableIndex);
 
 	// sets the result to the function parameters that are called by reference for drawing
-	void getResult(Vector3d&/* double& */result);
+	void getResult(Vector3d& result);
 	
 	// get the correct prismatic joint variable after arm is correctly oriented (i.e. first two joint angles optimized)
 	double getPrismaticJointVar();
 
-	// gets distance from the current end-effector position and the goal position
+	// gets distance between current end-effector position and goal position
 	double getDistance();
 
+	// turns vector3d into regular vector
+	std::vector<double> vector3dToRegularVector(Vector3d theVector);
+
+	// keep prismatic joint variable >= 0
+	void constrainPrismatic();
 };

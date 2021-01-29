@@ -9,7 +9,7 @@ class Arm
 {
 public:
 	static const double PI;
-
+	std::vector<int>frameWithJointVariable;
 	Arm() {};
 	~Arm() {
 		if (!theJoints.empty()) {
@@ -47,6 +47,9 @@ public:
 	
 	// changes test joint variables of all the frames
 	void updateTestFrames(double newJointVariable1, double newJointVariable2, double newJointVariable3);
+
+	// changes test joint variables given in a vector of all the frames 
+	void updateTestFrames(std::vector<double> jointVariables);
 
 	// get test joint variable of a frame identified by frame pointer
 	double getTestJointVariable(DHframe* theFrame);

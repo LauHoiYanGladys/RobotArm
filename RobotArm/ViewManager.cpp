@@ -32,7 +32,7 @@ void ViewManager::manage()
 	auto currentTime = std::chrono::system_clock::now();
 	double elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds> (currentTime - prevArmMoveTime).count();
 	//cout << "elapsed time: " << elapsedTime << '\n';
-	if (elapsedTime > moveTimeThresh) {
+	if (elapsedTime > moveTimeThresh && goalIsMoving()) {
 
 		controlArm();
 		prevArmMoveTime = currentTime;
@@ -286,4 +286,16 @@ void ViewManager::controlArm()
 	// thus no negative sign in front of the first joint variable
 	theArm.updateTestFrames(newJointVariables(0), newJointVariables(1), newJointVariables(2)); // to be extra safe that it's updated
 	/*theArm.draw();*/
+}
+
+bool ViewManager::goalIsMoving()
+{
+	if (FsGetKeyState(FSKEY_D) && goal.x < mapsize ||
+		FsGetKeyState(FSKEY_A) && goal.x > -mapsize ||
+		FsGetKeyState(FSKEY_S) && goal.y < mapsize ||
+		FsGetKeyState(FSKEY_E) ||
+		FsGetKeyState(FSKEY_C))
+		return true;
+	else
+		return false;
 }

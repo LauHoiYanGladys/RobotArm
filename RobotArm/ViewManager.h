@@ -16,7 +16,6 @@ public:
 	Camera3D theCamera;
 	OrbitingViewer theOrbiter;
 	CourierNewFont textfont;
-
 	int win_width = 1024;			//window width for fssimplewindow
 	int win_height = 768;			//window height for fssimplewindow
 
@@ -58,5 +57,8 @@ public:
 
 	// move arm according to IK results
 	void controlArm();
+
+	// check whether goal is currently moving
+	bool goalIsMoving();
 };
 

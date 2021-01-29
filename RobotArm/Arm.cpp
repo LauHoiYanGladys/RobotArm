@@ -1,3 +1,4 @@
+#include <assert.h>     /* assert */
 #include "Arm.h"
 #include "DHframe.h"
 #include "Joint.h"
@@ -83,9 +84,11 @@ void Arm::buildArm()
 	firstFrame->assignJoint(secondJoint);
 	jointFrameMap.insert({ secondJoint, firstFrame });
 
+	// record the frame index 1 in the collection of indices of frames containing jointVariables
+	frameWithJointVariable.push_back(1);
+
 	// add DH frame to frame collection
 	theFrames.push_back(firstFrame);
-
 
 	// add the joint to the joint collection
 	theJoints.push_back(secondJoint);
@@ -94,6 +97,8 @@ void Arm::buildArm()
 	DHframe* secondFrame = new DHframe(0., PI / 2, 0., PI / 2);
 	secondFrame->assignParentDHframe(firstFrame);
 
+	// record the frame index 2 in the collection of indices of frames containing jointVariables
+	frameWithJointVariable.push_back(2);
 
 	// create the second link and assign it to the second DH frame
 	Link* secondLink = new Link(25);
@@ -130,6 +135,9 @@ void Arm::buildArm()
 	// add DH frame to frame collection
 	theFrames.push_back(fourthFrame);
 	
+	// record the frame index 4 in the collection of indices of frames containing jointVariables
+	frameWithJointVariable.push_back(4);
+
 	// drawing an arm with single revolute joint for debugging
 	//// define the 0th DH frame
 	//DHframe* zerothFrame = new DHframe();
@@ -209,6 +217,18 @@ void Arm::updateTestFrames(double newJointVariable1, double newJointVariable2, d
 	theFrames[2]->update_test_theta(newJointVariable2);
 	theFrames[4]->update_test_d(newJointVariable3);
 	/*std::cout << "Test frames updated" << std::endl;*/
+}
+
+void Arm::updateTestFrames(std::vector<double> jointVariables)
+{
+	assert(jointVariables.size() == frameWithJointVariable.size());
+	for (int i = 0; i < frameWithJointVariable.size(); i++) {
+		int currFrameIndex = frameWithJointVariable[i];
+		if (theJoints[i]->type == Joint::revolute)
+			theFrames[currFrameIndex]->update_test_theta(jointVariables[i]);
+		else if (theJoints[i]->type == Joint::prismatic)
+			theFrames[currFrameIndex]->update_test_d(jointVariables[i]);
+	}
 }
 
 double Arm::getTestJointVariable(DHframe* theFrame)

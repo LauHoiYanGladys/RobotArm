@@ -19,11 +19,11 @@ InverseKinematics::InverseKinematics(double x, double y, double z, Arm* inputArm
 				0, 0, 0;
 	/*jacobian << 0, 0, 0;*/ // (single-revolute joint arm(for debugging))
 
-	alpha = 0.0001; // revolute joint learning rate
+	alpha = 0.00001; // revolute joint learning rate
 	alphaPris = 0.5; // prismatic joint need larger learning rate because its values are inherently larger than those of revolute
 
 	maxIteration = 700;
-	stopThreshold = 0.5;
+	stopThreshold = 1;
 	delta = 0.001;
 }
 
@@ -34,10 +34,7 @@ void/*Vector3d*//*double*/ InverseKinematics::computeCostGradient()
 	//FK = theArm->compute_test_FK(2); // end effector frame is 2nd frame (single-revolute joint arm (for debugging))
 
 	// take partial derivative of the cost function
-	costGradient(0) = differentiateCost(1);
-	costGradient(1) = differentiateCost(2);
-	costGradient(2) = differentiateCost(3);
-	//costGradient(2) = 0.; // dummy for the third joint variable
+	costGradient = differentiateCost();
 
 }
 
@@ -113,17 +110,11 @@ void InverseKinematics::update()
 	int jointNumber = theArm->theJoints.size(); // get the number of joints
 	for (int i = 0; i < jointNumber; i++) {
 		if (theArm->theJoints[i]->type == Joint::revolute)
-			update(i) = costGradient(i) * alpha;
+			update(i) = costGradient[i] * alpha;
 		else if (theArm->theJoints[i]->type == Joint::prismatic)
-			update(i) = costGradient(i) * alphaPris;
+			update(i) = costGradient[i] * alphaPris;
 	}
 	new_testJointVariables = testJointVariables - update;
-
-	// make sure it is within joint limits
-	/*new_testJointVariables = std::min(std::max(new_testJointVariables, -PI), PI);*/
-	/*new_testJointVariables(0) = std::min(std::max(new_testJointVariables(0), - PI), PI);
-	new_testJointVariables(1) = std::min(std::max(new_testJointVariables(1), - PI), PI);
-	new_testJointVariables(2) = std::min(std::max(new_testJointVariables(2), 0.), 200.);*/
 
 	/*std::cout << "test joint variable " <<  jointVariableIndex << " updated from " 
 		<< testJointVariables << " to " << new_testJointVariables << std::endl;*/
@@ -154,7 +145,7 @@ void InverseKinematics::getIK()
 		if (theNewCost < stopThreshold) {
 			std::cout << "Gradient descend early ended on iteration " << counter << std::endl;
 			std::cout << "Ending new cost is " << theNewCost << std::endl;
-			//testJointVariables(2) = getPrismaticJointVar(); // correct prismatic joint variable computed, independent of the gradient descent
+			constrainPrismatic(); // keep prismatic joint variable >= 0 
 			std::cout << "Final joint variables are " << testJointVariables;
 			return;
 
@@ -168,6 +159,7 @@ void InverseKinematics::getIK()
 
 	//testJointVariables(2) = getPrismaticJointVar(); // correct prismatic joint variable computed, independent of the gradient descent
 
+	constrainPrismatic(); // keep prismatic joint variable >= 0 
 	std::cout << "Gradient descend ended after max iteration " << counter << std::endl;
 	std::cout << "Ending new cost is " << theNewCost << std::endl;
 	std::cout << "Final joint variables are " << testJointVariables;
@@ -210,7 +202,6 @@ double InverseKinematics::computeCost(costType theCostType)
 
 double InverseKinematics::computeCost(double jointVariable1, double jointVariable2, double jointVariable3)
 {
-	double angleDeviation, distance;
 	double cost = 0.;
 	theArm->updateTestFrames(jointVariable1, jointVariable2, jointVariable3);
 	cost = getDistance();
@@ -222,48 +213,85 @@ double InverseKinematics::computeCost(double jointVariable1, double jointVariabl
 
 }
 
+double InverseKinematics::computeCost(std::vector<double> jointVariables)
+{
+	double cost = 0.;
+	std::vector<double> testJointVariables_regularVec;
+	theArm->updateTestFrames(jointVariables);
+	cost = getDistance();
+
+	// restore the original test joint variable (just to be extra safe)
+	testJointVariables_regularVec = vector3dToRegularVector(testJointVariables);
+	theArm->updateTestFrames(testJointVariables_regularVec);
+
+	return cost;
+}
+
 double InverseKinematics::differentiateCost(/*costType theCostType, */int jointVariableNum)
 {
-	double angleDeviation_plus;
-	double angleDeviation_minus;
-	double distance_plus;
-	double distance_minus;
 	double cost_plus = 0.;
 	double cost_minus = 0.;
 	double res;
-	/*if (theCostType == costType::currCost) {*/
-		if (jointVariableNum == 1) {
-			// first joint var, plus
-			cost_plus = computeCost(testJointVariables(0) + delta, testJointVariables(1), testJointVariables(2));
 
-			// first joint var, minus
-			cost_minus = computeCost(testJointVariables(0) - delta, testJointVariables(1), testJointVariables(2));
+	if (jointVariableNum == 1) {
+		// first joint var, plus
+		cost_plus = computeCost(testJointVariables(0) + delta, testJointVariables(1), testJointVariables(2));
 
-		}
-		else if (jointVariableNum == 2) {
-			// second joint var, plus
-			cost_plus = computeCost(testJointVariables(0), testJointVariables(1) + delta, testJointVariables(2));
+		// first joint var, minus
+		cost_minus = computeCost(testJointVariables(0) - delta, testJointVariables(1), testJointVariables(2));
 
-			// second joint var, minus
-			cost_minus = computeCost(testJointVariables(0), testJointVariables(1) - delta, testJointVariables(2));
+	}
+	else if (jointVariableNum == 2) {
+		// second joint var, plus
+		cost_plus = computeCost(testJointVariables(0), testJointVariables(1) + delta, testJointVariables(2));
 
-		}
-		else if (jointVariableNum == 3) {
-			// third joint var, plus
-			cost_plus = computeCost(testJointVariables(0), testJointVariables(1), testJointVariables(2) + delta);
+		// second joint var, minus
+		cost_minus = computeCost(testJointVariables(0), testJointVariables(1) - delta, testJointVariables(2));
 
-			// third joint var, minus
-			cost_minus = computeCost(testJointVariables(0), testJointVariables(1), testJointVariables(2) - delta);
+	}
+	else if (jointVariableNum == 3) {
+		// third joint var, plus
+		cost_plus = computeCost(testJointVariables(0), testJointVariables(1), testJointVariables(2) + delta);
 
-		}
-
-		else
-			std::cout << "invalid jointVariableNum, differentiation failed" << std::endl;
+		// third joint var, minus
+		cost_minus = computeCost(testJointVariables(0), testJointVariables(1), testJointVariables(2) - delta);
+	}
+	else
+		std::cout << "invalid jointVariableNum, differentiation failed" << std::endl;
 		
 	res = (cost_plus - cost_minus) / (2 * delta); // compute result
 
 	// taken care of by the computeCost function
 	//theArm->updateTestFrames(testJointVariables(0), testJointVariables(1), testJointVariables(2)); // restore values
+
+	return res;
+}
+
+std::vector<double> InverseKinematics::differentiateCost()
+{
+	std::vector<double>res;
+	int numJointVariable = theArm->frameWithJointVariable.size(); // get number of joint variables
+
+	// differentiate the cost function for each joint variable
+	for (int i = 0; i < numJointVariable; i++) {
+		double cost_plus = 0.;
+		double cost_minus = 0.;
+		Vector3d testJointVariables_plus = testJointVariables;
+		Vector3d testJointVariables_minus = testJointVariables;
+
+		// perturb the joint variable upwards (plus)
+		testJointVariables_plus(i) = testJointVariables(i) + delta;
+		std::vector testJointVariables_plus_regularVec = vector3dToRegularVector(testJointVariables_plus);
+		cost_plus = computeCost(testJointVariables_plus_regularVec);
+
+		// perturb the joint variable downwards (minus)
+		testJointVariables_minus(i) = testJointVariables(i) - delta;
+		std::vector testJointVariables_minus_regularVec = vector3dToRegularVector(testJointVariables_minus);
+		cost_minus = computeCost(testJointVariables_minus_regularVec);
+
+		double result = (cost_plus - cost_minus) / (2 * delta); // compute result
+		res.push_back(result);
+	}
 
 	return res;
 }
@@ -459,7 +487,24 @@ double InverseKinematics::getPrismaticJointVar()
 
 double InverseKinematics::getDistance()
 {
-	Vector3d FK_fourthFrame = theArm->compute_test_FK(4); // compute the original FK
+	int endEffectorFrameIndex = theArm->theFrames.size()-1;
+	Vector3d FK_fourthFrame = theArm->compute_test_FK(endEffectorFrameIndex); // compute the original FK
 	double res = (goal - FK_fourthFrame).norm();
 	return res;
+}
+
+std::vector<double> InverseKinematics::vector3dToRegularVector(Vector3d theVector)
+{
+	std::vector<double> res{ theVector(0), theVector(1), theVector(2) };
+	return res;
+}
+
+void InverseKinematics::constrainPrismatic()
+{
+	int jointNumber = theArm->theJoints.size();
+	// keep prismatic joint variable >=0
+	for (int i = 0; i < jointNumber; i++) {
+		if (theArm->theJoints[i]->type == Joint::prismatic)
+			testJointVariables(i) = std::max(testJointVariables(i), 0.);
+	}
 }
