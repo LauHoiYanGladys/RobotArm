@@ -353,6 +353,7 @@ void DrawingUtilNG::drawCylinderZOffset(double r_top, double r_bot, double heigh
 	drawCylinderZ(r_top, r_bot, height, centerX, centerY, centerZ + (height / 2));
 }
 
+
 void DrawingUtilNG::drawPrismZ(double x_size, double y_size, double height, double centerX, double centerY, double centerZ)
 {
 	double x1 = centerX - (x_size / 2);

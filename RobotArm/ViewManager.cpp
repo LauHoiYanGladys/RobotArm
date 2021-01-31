@@ -18,6 +18,7 @@ void ViewManager::initialize()
 	theOrbiter.h = 0.;
 
 	theCamera.farZ = view_dist + theOrbiter.dist;
+	/*theArm.buildArm_PUMA560();*/
 	theArm.buildArm();
 }
 
@@ -46,9 +47,9 @@ void ViewManager::manage()
 	draw_environment3D();
 	draw_goal();
 
-	/*theArm.moveArm(PI/4, PI/4, 20.);*/
+	/*std::vector<double>armPosition{ PI/4, 0., PI };
+	theArm.moveArm(armPosition);*/
 	/*controlArm();*/
-	/*theArm.moveArm(PI / 4);*/
 	theArm.draw();
 
 	//do the 2D overlay drawing
@@ -280,11 +281,17 @@ void ViewManager::controlArm()
 
 	// draw arm with updated joint variables
 	// the negative sign needed before the first joint to prevent reflection about the horizontal axis, probably due to non-right-hand coordinate system of of openGL
-	theArm.moveArm(-newJointVariables(0), newJointVariables(1), newJointVariables(2));
+	std::vector<double>temp = InverseKinematics::vector3dToRegularVector(newJointVariables);
+	temp[0] = -temp[0];
+	theArm.moveArm(temp);
+	/*theArm.moveArm(-newJointVariables(0), newJointVariables(1), newJointVariables(2));*/
 
 	// The test frames, though, need to store the correct joint variables for the next IK to start from the correct joint configuration
 	// thus no negative sign in front of the first joint variable
-	theArm.updateTestFrames(newJointVariables(0), newJointVariables(1), newJointVariables(2)); // to be extra safe that it's updated
+	std::vector<double>testJointVariables_regularVec = InverseKinematics::vector3dToRegularVector(newJointVariables);
+	theArm.updateTestFrames(testJointVariables_regularVec);// to be extra safe that it's updated
+
+	/*theArm.updateTestFrames(newJointVariables(0), newJointVariables(1), newJointVariables(2)); */
 	/*theArm.draw();*/
 }
 

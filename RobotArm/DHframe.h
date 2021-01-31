@@ -116,7 +116,9 @@ public:
 	void assignJoint(Joint* theJoint);
 
 	// assign link that follows one of its axis
-	void assignLink(Link* theLink, Link::linkDirection _direction);
+	void assignLink(Link* theLink, Link::linkDirection _direction, 
+					Link::linkOffsetDirection _offsetDirection = Link::linkOffsetDirection::alongYOffset,
+					double offset = 0.);
 
 	// assign link direction
 	void assignLinkDirection(Link::linkDirection _direction) { link->direction = _direction; }

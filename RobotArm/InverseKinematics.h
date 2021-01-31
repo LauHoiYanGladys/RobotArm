@@ -32,6 +32,7 @@ private:
 	enum class costType { currCost, newCost };
 	double alpha; // learning rate for revolute joint
 	double alphaPris; // learning rate for prismatic joint
+	double costChangeStopThreshold;
 	//double alpha0, alpha1, alpha2; // learning rate
 	int maxIteration;
 	double costChange;
@@ -66,14 +67,11 @@ public:
 
 	// evaluates the cost function at either current or updated variable values
 	double computeCost(costType theCostType);
-	
-	// evaluates the cost function at the provided joint variables
-	double computeCost(double jointVariable1, double jointVariable2, double jointVariable3);
 
 	// evaluates the cost function at the joint variables provided in a vector
 	double computeCost(std::vector<double> jointVariables);
 
-	// take partial derivative of the cost function of a certain joint
+	// take partial derivative of the cost function of a certain joint (this function is not used anymore)
 	double differentiateCost(int jointVariableNum);
 
 	// take partial derivative of the cost function of all joints
@@ -106,7 +104,7 @@ public:
 	double getDistance();
 
 	// turns vector3d into regular vector
-	std::vector<double> vector3dToRegularVector(Vector3d theVector);
+	static std::vector<double> vector3dToRegularVector(Vector3d theVector);
 
 	// keep prismatic joint variable >= 0
 	void constrainPrismatic();

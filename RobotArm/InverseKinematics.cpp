@@ -19,9 +19,9 @@ InverseKinematics::InverseKinematics(double x, double y, double z, Arm* inputArm
 				0, 0, 0;
 	/*jacobian << 0, 0, 0;*/ // (single-revolute joint arm(for debugging))
 
-	alpha = 0.00001; // revolute joint learning rate
-	alphaPris = 0.5; // prismatic joint need larger learning rate because its values are inherently larger than those of revolute
-
+	alpha = inputArm->alpha; // revolute joint learning rate
+	alphaPris = inputArm->alphaPris; // prismatic joint need larger learning rate because its values are inherently larger than those of revolute
+	costChangeStopThreshold = inputArm->costChangeStopThreshold;
 	maxIteration = 700;
 	stopThreshold = 1;
 	delta = 0.001;
@@ -29,9 +29,8 @@ InverseKinematics::InverseKinematics(double x, double y, double z, Arm* inputArm
 
 void/*Vector3d*//*double*/ InverseKinematics::computeCostGradient()
 {
-	
-	theArm->updateTestFrames(testJointVariables(0), testJointVariables(1), testJointVariables(2));
-	//FK = theArm->compute_test_FK(2); // end effector frame is 2nd frame (single-revolute joint arm (for debugging))
+	std::vector<double>testJointVariables_regularVec = vector3dToRegularVector(testJointVariables);
+	theArm->updateTestFrames(testJointVariables_regularVec);
 
 	// take partial derivative of the cost function
 	costGradient = differentiateCost();
@@ -140,16 +139,31 @@ void InverseKinematics::getIK()
 		//std::cout << "original test joint variables are " << testJointVariables << std::endl;
 		//std::cout << "new test joint variables are " << new_testJointVariables << std::endl;
 		/*std::cout << "Iteration " << counter << std::endl;*/
+		/*std::cout << "costChange " << costChange << std::endl;*/
 
 		// early terminate while loop if new cost is low or amount of update is small
-		if (theNewCost < stopThreshold) {
-			std::cout << "Gradient descend early ended on iteration " << counter << std::endl;
-			std::cout << "Ending new cost is " << theNewCost << std::endl;
-			constrainPrismatic(); // keep prismatic joint variable >= 0 
-			std::cout << "Final joint variables are " << testJointVariables;
-			return;
+		if (costChangeStopThreshold != NULL) {
+			if (theNewCost < stopThreshold || abs(costChange) < costChangeStopThreshold) {
+				std::cout << "Gradient descend early ended on iteration " << counter << std::endl;
+				std::cout << "Ending new cost is " << theNewCost << std::endl;
+				constrainPrismatic(); // keep prismatic joint variable >= 0 
+				std::cout << "Final joint variables are " << std::endl;
+				std::cout << testJointVariables << std::endl;
+				return;
 
+			}
 		}
+		else {
+			if (theNewCost < stopThreshold) {
+				std::cout << "Gradient descend early ended on iteration " << counter << std::endl;
+				std::cout << "Ending new cost is " << theNewCost << std::endl;
+				constrainPrismatic(); // keep prismatic joint variable >= 0 
+				std::cout << "Final joint variables are " << std::endl;
+				std::cout << testJointVariables << std::endl;
+				return;
+			}
+		}
+
 		
 		testJointVariables = new_testJointVariables;
 		theCurrCost = theNewCost;
@@ -188,30 +202,23 @@ double InverseKinematics::computeCost(costType theCostType)
 	double angleDeviation, distance;
 	double cost = 0.;
 	if (theCostType == costType::currCost) {
-		theArm->updateTestFrames(testJointVariables(0), testJointVariables(1), testJointVariables(2));
+		std::vector<double>testJointVariables_regularVec = vector3dToRegularVector(testJointVariables);
+		theArm->updateTestFrames(testJointVariables_regularVec);
+		/*theArm->updateTestFrames(testJointVariables(0), testJointVariables(1), testJointVariables(2));*/
 	}
 	else if (theCostType == costType::newCost) {
-		theArm->updateTestFrames(new_testJointVariables(0), new_testJointVariables(1), new_testJointVariables(2));
+		std::vector<double>new_testJointVariables_regularVec = vector3dToRegularVector(new_testJointVariables);
+		theArm->updateTestFrames(new_testJointVariables_regularVec);
+		/*theArm->updateTestFrames(new_testJointVariables(0), new_testJointVariables(1), new_testJointVariables(2));*/
 	}
 
 	cost = getDistance();
 	// restore the original test joint variable (just to be extra safe)
-	theArm->updateTestFrames(testJointVariables(0), testJointVariables(1), testJointVariables(2));
+	std::vector<double>testJointVariables_regularVec = vector3dToRegularVector(testJointVariables);
+	theArm->updateTestFrames(testJointVariables_regularVec);
 	return cost;
 }
 
-double InverseKinematics::computeCost(double jointVariable1, double jointVariable2, double jointVariable3)
-{
-	double cost = 0.;
-	theArm->updateTestFrames(jointVariable1, jointVariable2, jointVariable3);
-	cost = getDistance();
-
-	// restore the original test joint variable (just to be extra safe)
-	theArm->updateTestFrames(testJointVariables(0), testJointVariables(1), testJointVariables(2));
-
-	return cost;
-
-}
 
 double InverseKinematics::computeCost(std::vector<double> jointVariables)
 {
@@ -227,45 +234,45 @@ double InverseKinematics::computeCost(std::vector<double> jointVariables)
 	return cost;
 }
 
-double InverseKinematics::differentiateCost(/*costType theCostType, */int jointVariableNum)
-{
-	double cost_plus = 0.;
-	double cost_minus = 0.;
-	double res;
-
-	if (jointVariableNum == 1) {
-		// first joint var, plus
-		cost_plus = computeCost(testJointVariables(0) + delta, testJointVariables(1), testJointVariables(2));
-
-		// first joint var, minus
-		cost_minus = computeCost(testJointVariables(0) - delta, testJointVariables(1), testJointVariables(2));
-
-	}
-	else if (jointVariableNum == 2) {
-		// second joint var, plus
-		cost_plus = computeCost(testJointVariables(0), testJointVariables(1) + delta, testJointVariables(2));
-
-		// second joint var, minus
-		cost_minus = computeCost(testJointVariables(0), testJointVariables(1) - delta, testJointVariables(2));
-
-	}
-	else if (jointVariableNum == 3) {
-		// third joint var, plus
-		cost_plus = computeCost(testJointVariables(0), testJointVariables(1), testJointVariables(2) + delta);
-
-		// third joint var, minus
-		cost_minus = computeCost(testJointVariables(0), testJointVariables(1), testJointVariables(2) - delta);
-	}
-	else
-		std::cout << "invalid jointVariableNum, differentiation failed" << std::endl;
-		
-	res = (cost_plus - cost_minus) / (2 * delta); // compute result
-
-	// taken care of by the computeCost function
-	//theArm->updateTestFrames(testJointVariables(0), testJointVariables(1), testJointVariables(2)); // restore values
-
-	return res;
-}
+//double InverseKinematics::differentiateCost(/*costType theCostType, */int jointVariableNum)
+//{
+//	double cost_plus = 0.;
+//	double cost_minus = 0.;
+//	double res;
+//
+//	if (jointVariableNum == 1) {
+//		// first joint var, plus
+//		cost_plus = computeCost(testJointVariables(0) + delta, testJointVariables(1), testJointVariables(2));
+//
+//		// first joint var, minus
+//		cost_minus = computeCost(testJointVariables(0) - delta, testJointVariables(1), testJointVariables(2));
+//
+//	}
+//	else if (jointVariableNum == 2) {
+//		// second joint var, plus
+//		cost_plus = computeCost(testJointVariables(0), testJointVariables(1) + delta, testJointVariables(2));
+//
+//		// second joint var, minus
+//		cost_minus = computeCost(testJointVariables(0), testJointVariables(1) - delta, testJointVariables(2));
+//
+//	}
+//	else if (jointVariableNum == 3) {
+//		// third joint var, plus
+//		cost_plus = computeCost(testJointVariables(0), testJointVariables(1), testJointVariables(2) + delta);
+//
+//		// third joint var, minus
+//		cost_minus = computeCost(testJointVariables(0), testJointVariables(1), testJointVariables(2) - delta);
+//	}
+//	else
+//		std::cout << "invalid jointVariableNum, differentiation failed" << std::endl;
+//		
+//	res = (cost_plus - cost_minus) / (2 * delta); // compute result
+//
+//	// taken care of by the computeCost function
+//	//theArm->updateTestFrames(testJointVariables(0), testJointVariables(1), testJointVariables(2)); // restore values
+//
+//	return res;
+//}
 
 std::vector<double> InverseKinematics::differentiateCost()
 {
@@ -281,12 +288,12 @@ std::vector<double> InverseKinematics::differentiateCost()
 
 		// perturb the joint variable upwards (plus)
 		testJointVariables_plus(i) = testJointVariables(i) + delta;
-		std::vector testJointVariables_plus_regularVec = vector3dToRegularVector(testJointVariables_plus);
+		std::vector<double> testJointVariables_plus_regularVec = vector3dToRegularVector(testJointVariables_plus);
 		cost_plus = computeCost(testJointVariables_plus_regularVec);
 
 		// perturb the joint variable downwards (minus)
 		testJointVariables_minus(i) = testJointVariables(i) - delta;
-		std::vector testJointVariables_minus_regularVec = vector3dToRegularVector(testJointVariables_minus);
+		std::vector<double> testJointVariables_minus_regularVec = vector3dToRegularVector(testJointVariables_minus);
 		cost_minus = computeCost(testJointVariables_minus_regularVec);
 
 		double result = (cost_plus - cost_minus) / (2 * delta); // compute result
@@ -319,177 +326,177 @@ double InverseKinematics::computeAngleDeviation()
 	return angleDeviation;
 }
 
-void InverseKinematics::computeJacobian()
-{
-	// get the number of joints
-	int jointNumber = theArm->theJoints.size();
-	std::vector<Vector3d> jacobianCols;
-	for (int i = 0; i < jointNumber; i++) {
-		Vector3d temp;
-		if (theArm->theJoints[i]->type == Joint::revolute)
-			temp = computeJacobianColRev(i);
-		else if (theArm->theJoints[i]->type == Joint::prismatic)
-			temp = computeJacobianColPris(i);
-		jacobianCols.push_back(temp);
-	}
-	/*jacobian = jacobianCols[0];*/ //one-revolute arm (debugging)
-	jacobian << jacobianCols[0], jacobianCols[1], jacobianCols[2];
-	/*std::cout << "jacobian is " << jacobian << std::endl;*/
-}
+//void InverseKinematics::computeJacobian()
+//{
+//	// get the number of joints
+//	int jointNumber = theArm->theJoints.size();
+//	std::vector<Vector3d> jacobianCols;
+//	for (int i = 0; i < jointNumber; i++) {
+//		Vector3d temp;
+//		if (theArm->theJoints[i]->type == Joint::revolute)
+//			temp = computeJacobianColRev(i);
+//		else if (theArm->theJoints[i]->type == Joint::prismatic)
+//			temp = computeJacobianColPris(i);
+//		jacobianCols.push_back(temp);
+//	}
+//	/*jacobian = jacobianCols[0];*/ //one-revolute arm (debugging)
+//	jacobian << jacobianCols[0], jacobianCols[1], jacobianCols[2];
+//	/*std::cout << "jacobian is " << jacobian << std::endl;*/
+//}
 
-Vector3d InverseKinematics::computeJacobianCol(int jointVariableIndex)
-{
-	Vector3d jacobianCol;
-	Vector3d FK;
-	Vector3d perturbedFK_plus;
-	Vector3d perturbedFK_minus;
-	int frameIndex;
-	/*DHframe* theFrame;*/
-	// get the DH frame corresponding to the joint variable
-	if (jointVariableIndex == 0)
-		frameIndex = 1;
-	/*theFrame = theArm->theFrames[1];*/
-	else if (jointVariableIndex == 1)
-		frameIndex = 2;
-	/*theFrame = theArm->theFrames[2];*/
-	else if (jointVariableIndex == 2)
-		frameIndex = 4;
-		/*theFrame = theArm->theFrames[4];*/
-	else {
-		/*theFrame = nullptr;*/
-		std::cout << "Invalid joint variable index" << std::endl;
-	}
-		
-	/*DHframe* theFrame = theArm->jointFrameMap.at(theArm->theJoints[jointIndex]);*/
-	
-	// compute the jacobian column
-	// first put the current test joint variables into the arm's frames
+//Vector3d InverseKinematics::computeJacobianCol(int jointVariableIndex)
+//{
+//	Vector3d jacobianCol;
+//	Vector3d FK;
+//	Vector3d perturbedFK_plus;
+//	Vector3d perturbedFK_minus;
+//	int frameIndex;
+//	/*DHframe* theFrame;*/
+//	// get the DH frame corresponding to the joint variable
+//	if (jointVariableIndex == 0)
+//		frameIndex = 1;
+//	/*theFrame = theArm->theFrames[1];*/
+//	else if (jointVariableIndex == 1)
+//		frameIndex = 2;
+//	/*theFrame = theArm->theFrames[2];*/
+//	else if (jointVariableIndex == 2)
+//		frameIndex = 4;
+//		/*theFrame = theArm->theFrames[4];*/
+//	else {
+//		/*theFrame = nullptr;*/
+//		std::cout << "Invalid joint variable index" << std::endl;
+//	}
+//		
+//	/*DHframe* theFrame = theArm->jointFrameMap.at(theArm->theJoints[jointIndex]);*/
+//	
+//	// compute the jacobian column
+//	// first put the current test joint variables into the arm's frames
+//
+//	theArm->updateTestFrames(testJointVariables(0), testJointVariables(1), testJointVariables(2));
+//
+//	// second, compute the original FK
+//	/*FK = theArm->compute_test_FK(theFrame);*/
+//
+//	// third, perturb (slightly increase) the relevant test joint variable 
+//	if (jointVariableIndex == 0)
+//
+//		theArm->updateTestFrames(testJointVariables(0)+delta, testJointVariables(1), testJointVariables(2));
+//	else if (jointVariableIndex == 1)
+//
+//		theArm->updateTestFrames(testJointVariables(0), testJointVariables(1)+delta, testJointVariables(2));
+//	else if (jointVariableIndex == 2)
+//
+//		theArm->updateTestFrames(testJointVariables(0), testJointVariables(1), testJointVariables(2) + delta);
+//	else {
+//		/*theFrame = nullptr;*/
+//		std::cout << "Invalid joint variable index" << std::endl;
+//	}
+//	
+//	// fourth, compute the perturbed FK with the perturbed joint variable
+//	perturbedFK_plus = theArm->compute_test_FK(frameIndex);
+//
+//	// restore the original value of the joint variables for correct perturbation
+//	theArm->updateTestFrames(testJointVariables(0), testJointVariables(1), testJointVariables(2));
+//
+//	// fifth, perturb (slightly decrease) the relevant test joint variable 
+//	if (jointVariableIndex == 0)
+//		theArm->updateTestFrames(testJointVariables(0) - delta, testJointVariables(1), testJointVariables(2));
+//	else if (jointVariableIndex == 1)
+//		theArm->updateTestFrames(testJointVariables(0), testJointVariables(1) - delta, testJointVariables(2));
+//	else if (jointVariableIndex == 2)
+//		theArm->updateTestFrames(testJointVariables(0), testJointVariables(1), testJointVariables(2) - delta);
+//	else {
+//		std::cout << "Invalid joint variable index" << std::endl;
+//	}
+//
+//	// sixth, compute the perturbed FK with the perturbed joint variable
+//	perturbedFK_minus = theArm->compute_test_FK(frameIndex);
+//
+//	// finally, get the jacobian column
+//	jacobianCol = (perturbedFK_plus - perturbedFK_minus) / (2*delta);
+//
+//	// restore the original test joint variable 
+//	theArm->updateTestFrames(testJointVariables(0), testJointVariables(1), testJointVariables(2));
+//
+//	return jacobianCol;
+//}
 
-	theArm->updateTestFrames(testJointVariables(0), testJointVariables(1), testJointVariables(2));
+//Vector3d InverseKinematics::computeJacobianColRev(int jointVariableIndex)
+//{
+//	DHframe* theFrame;
+//	Vector3d jacobianCol;
+//	Vector3d FK;
+//	Vector3d currFK;
+//	theArm->updateTestFrames(testJointVariables(0), testJointVariables(1), testJointVariables(2));
+//	if (jointVariableIndex == 0) {
+//		theFrame = theArm->theFrames[1];
+//		currFK = theArm->compute_test_FK(0);
+//	}
+//	else if (jointVariableIndex == 1) {
+//		theFrame = theArm->theFrames[2];
+//		currFK = theArm->compute_test_FK(1);
+//	}
+//	else if (jointVariableIndex == 2) {
+//		theFrame = theArm->theFrames[4];
+//		currFK = theArm->compute_test_FK(3);
+//	}
+//	else {
+//		theFrame = nullptr;
+//		std::cout << "Invalid joint variable index" << std::endl;
+//	}
+//	
+//	FK = theArm->compute_test_FK(4);
+//	/*FK = theArm->compute_test_FK(2);*/ // single-revolute joint arm (for debugging)
+//	
+//	/*std::cout << "The parent frame z-axis is " << theFrame->parent->getZAxisWorldTest();
+//	std::cout << "the vector from frame origin to end-effector is" << FK - currFK;
+//	std::cout << "the cross product is" << (theFrame->parent->getZAxisWorldTest()).cross(FK - currFK);*/
+//
+//	jacobianCol = (theFrame->parent->getZAxisWorldTest()).cross(FK - currFK);
+//	return jacobianCol;
+//}
 
-	// second, compute the original FK
-	/*FK = theArm->compute_test_FK(theFrame);*/
-
-	// third, perturb (slightly increase) the relevant test joint variable 
-	if (jointVariableIndex == 0)
-
-		theArm->updateTestFrames(testJointVariables(0)+delta, testJointVariables(1), testJointVariables(2));
-	else if (jointVariableIndex == 1)
-
-		theArm->updateTestFrames(testJointVariables(0), testJointVariables(1)+delta, testJointVariables(2));
-	else if (jointVariableIndex == 2)
-
-		theArm->updateTestFrames(testJointVariables(0), testJointVariables(1), testJointVariables(2) + delta);
-	else {
-		/*theFrame = nullptr;*/
-		std::cout << "Invalid joint variable index" << std::endl;
-	}
-	
-	// fourth, compute the perturbed FK with the perturbed joint variable
-	perturbedFK_plus = theArm->compute_test_FK(frameIndex);
-
-	// restore the original value of the joint variables for correct perturbation
-	theArm->updateTestFrames(testJointVariables(0), testJointVariables(1), testJointVariables(2));
-
-	// fifth, perturb (slightly decrease) the relevant test joint variable 
-	if (jointVariableIndex == 0)
-		theArm->updateTestFrames(testJointVariables(0) - delta, testJointVariables(1), testJointVariables(2));
-	else if (jointVariableIndex == 1)
-		theArm->updateTestFrames(testJointVariables(0), testJointVariables(1) - delta, testJointVariables(2));
-	else if (jointVariableIndex == 2)
-		theArm->updateTestFrames(testJointVariables(0), testJointVariables(1), testJointVariables(2) - delta);
-	else {
-		std::cout << "Invalid joint variable index" << std::endl;
-	}
-
-	// sixth, compute the perturbed FK with the perturbed joint variable
-	perturbedFK_minus = theArm->compute_test_FK(frameIndex);
-
-	// finally, get the jacobian column
-	jacobianCol = (perturbedFK_plus - perturbedFK_minus) / (2*delta);
-
-	// restore the original test joint variable 
-	theArm->updateTestFrames(testJointVariables(0), testJointVariables(1), testJointVariables(2));
-
-	return jacobianCol;
-}
-
-Vector3d InverseKinematics::computeJacobianColRev(int jointVariableIndex)
-{
-	DHframe* theFrame;
-	Vector3d jacobianCol;
-	Vector3d FK;
-	Vector3d currFK;
-	theArm->updateTestFrames(testJointVariables(0), testJointVariables(1), testJointVariables(2));
-	if (jointVariableIndex == 0) {
-		theFrame = theArm->theFrames[1];
-		currFK = theArm->compute_test_FK(0);
-	}
-	else if (jointVariableIndex == 1) {
-		theFrame = theArm->theFrames[2];
-		currFK = theArm->compute_test_FK(1);
-	}
-	else if (jointVariableIndex == 2) {
-		theFrame = theArm->theFrames[4];
-		currFK = theArm->compute_test_FK(3);
-	}
-	else {
-		theFrame = nullptr;
-		std::cout << "Invalid joint variable index" << std::endl;
-	}
-	
-	FK = theArm->compute_test_FK(4);
-	/*FK = theArm->compute_test_FK(2);*/ // single-revolute joint arm (for debugging)
-	
-	/*std::cout << "The parent frame z-axis is " << theFrame->parent->getZAxisWorldTest();
-	std::cout << "the vector from frame origin to end-effector is" << FK - currFK;
-	std::cout << "the cross product is" << (theFrame->parent->getZAxisWorldTest()).cross(FK - currFK);*/
-
-	jacobianCol = (theFrame->parent->getZAxisWorldTest()).cross(FK - currFK);
-	return jacobianCol;
-}
-
-Vector3d InverseKinematics::computeJacobianColPris(int jointVariableIndex)
-{
-	DHframe* theFrame;
-	Vector3d jacobianCol;
-	if (jointVariableIndex == 0)
-		theFrame = theArm->theFrames[1];
-	else if (jointVariableIndex == 1)
-		theFrame = theArm->theFrames[2];
-	else if (jointVariableIndex == 2)
-		theFrame = theArm->theFrames[4];
-	else {
-		theFrame = nullptr;
-		std::cout << "Invalid joint variable index" << std::endl;
-	}
-	theArm->updateTestFrames(testJointVariables(0), testJointVariables(1), testJointVariables(2)); // make sure it's updated
-	jacobianCol = theFrame->parent->getZAxisWorldTest();
-	return jacobianCol;
-}
+//Vector3d InverseKinematics::computeJacobianColPris(int jointVariableIndex)
+//{
+//	DHframe* theFrame;
+//	Vector3d jacobianCol;
+//	if (jointVariableIndex == 0)
+//		theFrame = theArm->theFrames[1];
+//	else if (jointVariableIndex == 1)
+//		theFrame = theArm->theFrames[2];
+//	else if (jointVariableIndex == 2)
+//		theFrame = theArm->theFrames[4];
+//	else {
+//		theFrame = nullptr;
+//		std::cout << "Invalid joint variable index" << std::endl;
+//	}
+//	theArm->updateTestFrames(testJointVariables(0), testJointVariables(1), testJointVariables(2)); // make sure it's updated
+//	jacobianCol = theFrame->parent->getZAxisWorldTest();
+//	return jacobianCol;
+//}
 
 void InverseKinematics::getResult(Vector3d& result)
 {
 	result = testJointVariables;
 }
 
-double InverseKinematics::getPrismaticJointVar()
-{
-	double res;
-	double thirdLinkLength;
-	theArm->updateTestFrames(testJointVariables(0), testJointVariables(1), testJointVariables(2));
-	thirdLinkLength = theArm->theFrames[3]->link->length;
-	Vector3d FK_thirdFrame = theArm->compute_test_FK(3); // compute the original FK
-	res = std::max((goal - FK_thirdFrame).norm() - thirdLinkLength,0.); // constrain prismatic joint length to be >= 0
-
-	return res;
-}
+//double InverseKinematics::getPrismaticJointVar()
+//{
+//	double res;
+//	double thirdLinkLength;
+//	theArm->updateTestFrames(testJointVariables(0), testJointVariables(1), testJointVariables(2));
+//	thirdLinkLength = theArm->theFrames[3]->link->length;
+//	Vector3d FK_thirdFrame = theArm->compute_test_FK(3); // compute the original FK
+//	res = std::max((goal - FK_thirdFrame).norm() - thirdLinkLength,0.); // constrain prismatic joint length to be >= 0
+//
+//	return res;
+//}
 
 double InverseKinematics::getDistance()
 {
 	int endEffectorFrameIndex = theArm->theFrames.size()-1;
-	Vector3d FK_fourthFrame = theArm->compute_test_FK(endEffectorFrameIndex); // compute the original FK
-	double res = (goal - FK_fourthFrame).norm();
+	Vector3d FK_endEffector = theArm->compute_test_FK(endEffectorFrameIndex); // compute the original FK
+	double res = (goal - FK_endEffector).norm();
 	return res;
 }
 

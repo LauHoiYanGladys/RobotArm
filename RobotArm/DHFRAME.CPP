@@ -69,10 +69,11 @@ void DHframe::assignJoint(Joint* theJoint)
 	joint = theJoint;
 }
 
-void DHframe::assignLink(Link* theLink, Link::linkDirection _direction)
+void DHframe::assignLink(Link* theLink, Link::linkDirection _direction, Link::linkOffsetDirection _offsetDirection, double offset)
 {
 	link = theLink;
 	theLink->assignLinkDirection(_direction);
+	theLink->assignLinkOffsetProperties(_offsetDirection, offset);
 }
 
 Vector3d DHframe::getWorldCenter(bool isTest)
