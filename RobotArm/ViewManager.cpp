@@ -88,9 +88,9 @@ void ViewManager::user_controls_read()
 		goal.x += 0.5;
 	if (FsGetKeyState(FSKEY_A) && goal.x > -mapsize)
 		goal.x -= 0.5;
-	if (FsGetKeyState(FSKEY_S) && goal.y < mapsize)
+	if (FsGetKeyState(FSKEY_W) && goal.y < mapsize)
 		goal.y += 0.5;
-	if (FsGetKeyState(FSKEY_W) && goal.y > -mapsize)
+	if (FsGetKeyState(FSKEY_S) && goal.y > -mapsize)
 		goal.y -= 0.5;
 
 	if (FsGetKeyState(FSKEY_E))
@@ -184,15 +184,15 @@ void ViewManager::draw_goal()
 	double shadow_offset = 0;
 	glBegin(GL_QUADS);
 	glColor3ub(100, 200, 100);	//dark green
-	glVertex3f(goal_size * 1.05 / 2 + goal.x, shadow_offset, -goal_size * 1.05 / 2 + goal.y);
-	glVertex3f(-goal_size * 1.05 / 2 + goal.x, shadow_offset, -goal_size * 1.05 / 2 + goal.y);
-	glVertex3f(-goal_size * 1.05 / 2 + goal.x, shadow_offset, goal_size * 1.05 / 2 + goal.y);
-	glVertex3f(goal_size * 1.05 / 2 + goal.x, shadow_offset, goal_size * 1.05 / 2 + goal.y);
+	glVertex3f(goal_size * 1.05 / 2 + goal.x, shadow_offset, -goal_size * 1.05 / 2 - goal.y);
+	glVertex3f(-goal_size * 1.05 / 2 + goal.x, shadow_offset, -goal_size * 1.05 / 2 - goal.y);
+	glVertex3f(-goal_size * 1.05 / 2 + goal.x, shadow_offset, goal_size * 1.05 / 2 - goal.y);
+	glVertex3f(goal_size * 1.05 / 2 + goal.x, shadow_offset, goal_size * 1.05 / 2 - goal.y);
 	glEnd();
 
 	//draw cube for showing goal position in 3D
 	glPushMatrix();
-	glTranslatef(goal.x, goal.z, goal.y);	//order of x,y,z is reoriented to account for OpenGL conventions
+	glTranslatef(goal.x, goal.z, -goal.y);	//order of x,y,z is reoriented with negative in front of y to account for OpenGL conventions
 
 	glColor3ub(0, 255, 0);	//bright green
 	DrawingUtilNG::drawCube(goal_size);
@@ -226,7 +226,7 @@ void ViewManager::draw_overlay2D()
 	textfont.drawText(data, 10, win_height - 120, .32);
 	datastring.str("");
 
-	datastring << "y:" << theCamera.y;
+	datastring << "y:" << -theCamera.y; // negative sign to give the correct value in the coordinate system used by the robot arm
 	data = datastring.str();
 	textfont.drawText(data, 10, win_height - 100, .32);
 	datastring.str("");
@@ -285,20 +285,9 @@ void ViewManager::controlArm()
 	/*std::cout << "newJointVariables are " << newJointVariables << std::endl;*/
 
 	// draw arm with updated joint variables
-	// the negative sign needed before the first joint to prevent reflection about the horizontal axis, probably due to non-right-hand coordinate system of of openGL
 	std::vector<double>temp = InverseKinematics::vector3dToRegularVector(newJointVariables);
-	temp[0] = -temp[0];
 	theArm.moveArm(temp);
-	/*theArm.moveArm(-newJointVariables(0), newJointVariables(1), newJointVariables(2));*/
-
-	// this part is now taken care of by the moveArm function
-	// The test frames, though, need to store the correct joint variables for the next IK to start from the correct joint configuration
-	// thus no negative sign in front of the first joint variable
-	//std::vector<double>testJointVariables_regularVec = InverseKinematics::vector3dToRegularVector(newJointVariables);
-	//theArm.updateTestFrames(testJointVariables_regularVec);// to be extra safe that it's updated
-
-	/*theArm.updateTestFrames(newJointVariables(0), newJointVariables(1), newJointVariables(2)); */
-	/*theArm.draw();*/
+	
 }
 
 bool ViewManager::goalIsMoving()

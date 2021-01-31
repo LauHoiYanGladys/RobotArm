@@ -52,10 +52,7 @@ public:
 	void updateTestFrames(std::vector<double> jointVariables);
 
 	// returns all test joint variable as a Vector3d
-	Vector3d/*double*/ getTestJointVariable();
-
-	// returns all joint variable as a Vector3d
-	Vector3d getJointVariable();
+	Vector3d getTestJointVariable();
 
 	// computes and returns the forward kinematics to a certain frame identified by frame number
 	Vector3d compute_test_FK(int frameIndex); // frameNumber runs from 0 to theFrames.size()-1

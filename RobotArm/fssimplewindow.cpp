@@ -1152,7 +1152,13 @@ static void InitializeOpenGL(HWND wnd)
 
     glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	glOrtho(0,(float)rect.right-1,(float)rect.bottom-1,0,-1,1);
+	/*glOrtho(0,(float)rect.right-1,(float)rect.bottom-1,0,-1,1);*/ //original version
+
+	// trying to turn the coordinate right-handed by making z-axis point out of the screen
+	glOrtho(0, (float)rect.right - 1, (float)rect.bottom - 1, 0, 1, -1); 
+
+	// rotate 90 degrees counter clockwise about x axis to make z-axis point up (does't work)
+	/*glRotatef(90, -1, 0, 0);*/
 
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();

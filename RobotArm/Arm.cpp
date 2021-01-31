@@ -14,15 +14,16 @@ using namespace Eigen;
 void Arm::draw()
 {
 		
-
 	for (auto& frame : theFrames) {
 		// store current matrix state
 		glPushMatrix();
 
-		// first, rotate frame 90 degrees counterclockwise about the x-axis
+		//Note that the coordinate system is made right-handed in fssimplewindow, with z-axis pointing out of the screen
+
+		// rotate frame 90 degrees counterclockwise about the x-axis
 		// because openGL has y-axis up, while homogeneous transformation has z-axis up
 		glRotatef(90, -1, 0, 0);
-
+		
 		// translate into the local frame
 		Vector3d worldCenter = frame->getWorldCenter(false);
 		/*std::cout << "World center of joint" << std::endl << worldCenter << std::endl;*/
@@ -183,7 +184,7 @@ void Arm::buildArm_PUMA560()
 	costChangeStopThreshold = 0.02;
 
 	// some link parameters
-	double secondLinkOffset = 0.; // real PUMA560 has non-zero offset here, but I cannot get it to work with that, as the IK is somehow always computed as if this secondLinkOffset is zero; don't change now as it will affect the correctness of the frameWithEndPoints
+	double secondLinkOffset = 5.; 
 	double firstLinkLength = 25.;
 	double secondLinkLength = 25.;
 	double thirdLinkLength = 15.;
@@ -221,9 +222,6 @@ void Arm::buildArm_PUMA560()
 	DHframe* secondFrame = new DHframe(0., -PI/2, 0., 0.);
 	secondFrame->assignParentDHframe(firstFrame);
 
-	//// record the frame index 2 in the collection of indices of frames containing jointVariables
-	//frameWithJointVariable.push_back(2);
-
 	// create the second (revolute) joint, assign it to 2nd DH frame
 	Joint* secondJoint = new Joint();
 	secondFrame->assignJoint(secondJoint);
@@ -233,58 +231,61 @@ void Arm::buildArm_PUMA560()
 	// add the second joint to the joint collection
 	theJoints.push_back(secondJoint);
 
-	//// create the second link with offset along Y and assign it to the second DH frame
-	//Link* secondLink = new Link(secondLinkLength);
-	//secondFrame->assignLink(secondLink, Link::linkDirection::alongX, Link::linkOffsetDirection::alongZOffset, secondLinkOffset);
-
 	// add DH frame to frame collection
 	theFrames.push_back(secondFrame);
 
-	// define the third DH frame, note its offset from the second DH frame
-	DHframe* thirdFrame = new DHframe(secondLinkLength, 0., secondLinkOffset, 0.);
+	// define the third DH frame (defined to make it easy finding the positions of end points when secondLinkOffset is not zero) 
+	DHframe* thirdFrame = new DHframe(0., 0., secondLinkOffset, 0.);
 	thirdFrame->assignParentDHframe(secondFrame);
-
-	// create the second link and assign it to the third DH frame
-	Link* secondLink = new Link(secondLinkLength);
-	thirdFrame->assignLink(secondLink, Link::linkDirection::alongX_negative);
-
+	frameWithEndPoints.push_back(3);
 	// record the frame index 3 in the collection of indices of frames containing jointVariables
 	frameWithJointVariable.push_back(3);
 
-	// create the third (revolute) joint
-	// note that it corresponds to the third DH frame instead of second DH frame
-	Joint* thirdJoint = new Joint();
-	thirdFrame->assignJoint(thirdJoint);
-	jointFrameMap.insert({ thirdJoint, thirdFrame });
-	frameWithEndPoints.push_back(3);
+	// create the second link and assign it to the third DH frame
+	Link* secondLink = new Link(secondLinkLength);
+	thirdFrame->assignLink(secondLink, Link::linkDirection::alongX);
 
 	// add DH frame to frame collection
 	theFrames.push_back(thirdFrame);
 
-	// add the joint to the joint collection
-	theJoints.push_back(thirdJoint);
-
-	// define the fourth DH frame (no associated joint)
-	DHframe* fourthFrame = new DHframe(0., -PI/2, 0., 0.);
+	// define the fourth DH frame
+	DHframe* fourthFrame = new DHframe(secondLinkLength, 0., 0., 0.);
 	fourthFrame->assignParentDHframe(thirdFrame);
 
-	// create the third link and assign it to the fourth DH frame (not sure why the third link always takes a moment to be drawn at the correct position - to be debugged)
-	Link* thirdLink = new Link(thirdLinkLength);
-	fourthFrame->assignLink(thirdLink, Link::linkDirection::alongZ);
+	// create the third (revolute) joint
+	// note that it corresponds to the fourth DH frame 
+	Joint* thirdJoint = new Joint();
+	fourthFrame->assignJoint(thirdJoint);
+	jointFrameMap.insert({ thirdJoint, fourthFrame });
+	frameWithEndPoints.push_back(4);
+
+	// add the joint to the joint collection
+	theJoints.push_back(thirdJoint);
 
 	// add DH frame to frame collection
 	theFrames.push_back(fourthFrame);
 
-	// record the frame index 4 in the collection of indices of frames containing jointVariables
-	frameWithJointVariable.push_back(4);
-
-	// define the fifth DH frame (end-effector frame)
-	DHframe* fifthFrame = new DHframe(0., 0., thirdLinkLength, 0.);
+	// define the fifth DH frame (no associated joint, just defined to conform to the DH convention)
+	DHframe* fifthFrame = new DHframe(0., -PI/2, 0., 0.);
 	fifthFrame->assignParentDHframe(fourthFrame);
-	frameWithEndPoints.push_back(5);
+
+	// create the third link and assign it to the fifth DH frame 
+	Link* thirdLink = new Link(thirdLinkLength);
+	fifthFrame->assignLink(thirdLink, Link::linkDirection::alongZ);
 
 	// add DH frame to frame collection
 	theFrames.push_back(fifthFrame);
+
+	// record the frame index 5 in the collection of indices of frames containing jointVariables
+	frameWithJointVariable.push_back(5);
+
+	// define the sixth DH frame (end-effector frame)
+	DHframe* sixthFrame = new DHframe(0., 0., thirdLinkLength, 0.);
+	sixthFrame->assignParentDHframe(fifthFrame);
+	frameWithEndPoints.push_back(6);
+
+	// add DH frame to frame collection
+	theFrames.push_back(sixthFrame);
 
 }
 
@@ -303,7 +304,6 @@ void Arm::moveArm(std::vector<double> jointVariables)
 		theJoints[i]->updateJointVariable(jointVariables[i]);	
 	}
 	// also updates test frames to ensure next test frame computation is based on actual joint variables 
-	jointVariables[0] = -jointVariables[0]; // for some uncertain reason, test frames only come out right if the first joint variable fed into it is the negative of the first joint variable fed into moveArm
 	updateTestFrames(jointVariables);
 
 }
@@ -323,7 +323,7 @@ void Arm::updateTestFrames(std::vector<double> jointVariables)
 }
 
 
-Vector3d/*double*/ Arm::getTestJointVariable()
+Vector3d Arm::getTestJointVariable()
 {
 	Vector3d testJointVariables;
 	assert(testJointVariables.size() == frameWithJointVariable.size());
@@ -334,19 +334,11 @@ Vector3d/*double*/ Arm::getTestJointVariable()
 		else if (theJoints[i]->type == Joint::prismatic)
 			testJointVariables(i) = theFrames[currFrameIndex]->test_d;
 	}
-	/*double testJointVariables;*/
-	/*testJointVariables = theFrames[1]->test_theta;*/
-	/*testJointVariables << theFrames[1]->test_theta, theFrames[2]->test_theta, theFrames[4]->test_d;*/
+
 	return testJointVariables;
 }
 
-Vector3d Arm::getJointVariable()
-{
-	Vector3d jointVariables;
-	/*jointVariables << theFrames[1]->theta;*/
-	jointVariables << theFrames[1]->theta, theFrames[2]->theta, theFrames[4]->d;
-	return jointVariables;
-}
+
 
 Vector3d Arm::compute_test_FK(int frameIndex)
 {
@@ -367,8 +359,6 @@ Vector3d Arm::compute_test_FK(DHframe* theFrame)
 	Vector3d theFK;
 	theFK = theFrame->getWorldCenter(true); 
 	return theFK;
-
-	
 }
 
 std::vector<DrawingUtilNG::vertexF> Arm::compute_test_FK_all()
@@ -389,7 +379,7 @@ std::vector<DrawingUtilNG::vertexF> Arm::compute_test_FK_all()
 void Arm::testing_compute_test_FK_all()
 {
 	std::vector<DrawingUtilNG::vertexF>res = compute_test_FK_all();
-	std::cout << "Waiting" << std::endl; //set a stop on this line and check value of res by hovering mouse over the "res" on previous line
+	std::cout << "Testing completed" << std::endl; //set a stop on this line and check value of res by hovering mouse over the "res" on previous line
 }
 
 
