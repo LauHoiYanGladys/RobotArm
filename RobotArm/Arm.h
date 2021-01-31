@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <unordered_map>
+#include "DrawingUtilNG.h"
 #include "Link.h"
 #include "Joint.h"
 #include "DHframe.h"
@@ -9,7 +10,8 @@ class Arm
 {
 public:
 	static const double PI;
-	std::vector<int>frameWithJointVariable;
+	std::vector<int>frameWithJointVariable; // The indices of frames with joint variables
+	std::vector<int>frameWithEndPoints; // The indices of frames with end points (i.e. joint center or end-effector position)
 	Arm() {};
 	~Arm() {
 		if (!theJoints.empty()) {
@@ -43,7 +45,7 @@ public:
 	// builds the PUMA560 arm 
 	void buildArm_PUMA560();
 
-	// changes joint variables given in a vector (theFrames and theJoints)
+	// changes joint variables given in a vector (theFrames and theJoints), also updates test frames to ensure next test frame computation is based on actual joint variables 
 	void moveArm(std::vector<double> jointVariables);
 
 	// changes test joint variables given in a vector of all the frames 
@@ -61,8 +63,15 @@ public:
 	// computes and returns the forward kinematics to a certain frame, identified by frame pointer
 	Vector3d compute_test_FK(DHframe* theFrame); 
 
+	// computes and returns the forward kinematics to each joint center and the end effector in a vector of DrawingUtilNG::vertexF
+	std::vector<DrawingUtilNG::vertexF> compute_test_FK_all();
+
+	// for debugging and testing compute_test_FK_all
+	void testing_compute_test_FK_all();
+
 	// gets DH parameters from user
 	void getDHParameters();
+
 
 };
 

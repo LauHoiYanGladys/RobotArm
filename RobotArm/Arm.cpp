@@ -69,6 +69,7 @@ void Arm::buildArm()
 	Joint* firstJoint = new Joint();
 	zerothFrame->assignJoint(firstJoint);
 	jointFrameMap.insert({ firstJoint, zerothFrame });
+	frameWithEndPoints.push_back(0);
 
 	// add the joint to the joint collection
 	theJoints.push_back(firstJoint);
@@ -84,6 +85,7 @@ void Arm::buildArm()
 	Joint* secondJoint = new Joint();
 	firstFrame->assignJoint(secondJoint);
 	jointFrameMap.insert({ secondJoint, firstFrame });
+	frameWithEndPoints.push_back(1);
 
 	// record the frame index 1 in the collection of indices of frames containing jointVariables
 	frameWithJointVariable.push_back(1);
@@ -122,6 +124,7 @@ void Arm::buildArm()
 	thirdJoint->setJointTypePrismatic();
 	thirdFrame->assignJoint(thirdJoint);
 	jointFrameMap.insert({ thirdJoint, thirdFrame });
+	frameWithEndPoints.push_back(3);
 
 	// add DH frame to frame collection
 	theFrames.push_back(thirdFrame);
@@ -129,9 +132,10 @@ void Arm::buildArm()
 	// add the joint to the joint collection
 	theJoints.push_back(thirdJoint);
 
-	// define the fourth DH frame 
+	// define the fourth DH frame (end-effector frame)
 	DHframe* fourthFrame = new DHframe(0., 0., 25., -PI/2);
 	fourthFrame->assignParentDHframe(thirdFrame);
+	frameWithEndPoints.push_back(4);
 
 	// add DH frame to frame collection
 	theFrames.push_back(fourthFrame);
@@ -179,7 +183,7 @@ void Arm::buildArm_PUMA560()
 	costChangeStopThreshold = 0.02;
 
 	// some link parameters
-	double secondLinkOffset = 0.; // real PUMA560 has non-zero offset here, but I cannot get it to work with that, as the IK is somehow always computed as if this secondLinkOffset is zero
+	double secondLinkOffset = 0.; // real PUMA560 has non-zero offset here, but I cannot get it to work with that, as the IK is somehow always computed as if this secondLinkOffset is zero; don't change now as it will affect the correctness of the frameWithEndPoints
 	double firstLinkLength = 25.;
 	double secondLinkLength = 25.;
 	double thirdLinkLength = 15.;
@@ -195,6 +199,7 @@ void Arm::buildArm_PUMA560()
 	Joint* firstJoint = new Joint();
 	zerothFrame->assignJoint(firstJoint);
 	jointFrameMap.insert({ firstJoint, zerothFrame });
+	frameWithEndPoints.push_back(0);
 
 	// add the joint to the joint collection
 	theJoints.push_back(firstJoint);
@@ -223,6 +228,7 @@ void Arm::buildArm_PUMA560()
 	Joint* secondJoint = new Joint();
 	secondFrame->assignJoint(secondJoint);
 	jointFrameMap.insert({ secondJoint, secondFrame });
+	frameWithEndPoints.push_back(2);
 
 	// add the second joint to the joint collection
 	theJoints.push_back(secondJoint);
@@ -250,6 +256,7 @@ void Arm::buildArm_PUMA560()
 	Joint* thirdJoint = new Joint();
 	thirdFrame->assignJoint(thirdJoint);
 	jointFrameMap.insert({ thirdJoint, thirdFrame });
+	frameWithEndPoints.push_back(3);
 
 	// add DH frame to frame collection
 	theFrames.push_back(thirdFrame);
@@ -271,10 +278,11 @@ void Arm::buildArm_PUMA560()
 	// record the frame index 4 in the collection of indices of frames containing jointVariables
 	frameWithJointVariable.push_back(4);
 
-	// define the fifth DH frame
+	// define the fifth DH frame (end-effector frame)
 	DHframe* fifthFrame = new DHframe(0., 0., thirdLinkLength, 0.);
 	fifthFrame->assignParentDHframe(fourthFrame);
-	
+	frameWithEndPoints.push_back(5);
+
 	// add DH frame to frame collection
 	theFrames.push_back(fifthFrame);
 
@@ -294,6 +302,10 @@ void Arm::moveArm(std::vector<double> jointVariables)
 		}
 		theJoints[i]->updateJointVariable(jointVariables[i]);	
 	}
+	// also updates test frames to ensure next test frame computation is based on actual joint variables 
+	jointVariables[0] = -jointVariables[0]; // for some uncertain reason, test frames only come out right if the first joint variable fed into it is the negative of the first joint variable fed into moveArm
+	updateTestFrames(jointVariables);
+
 }
 
 
@@ -358,3 +370,26 @@ Vector3d Arm::compute_test_FK(DHframe* theFrame)
 
 	
 }
+
+std::vector<DrawingUtilNG::vertexF> Arm::compute_test_FK_all()
+{
+	std::vector<DrawingUtilNG::vertexF>res;
+
+	for (int i = 0; i < frameWithEndPoints.size(); i++) {
+		int currFrameIndex = frameWithEndPoints[i];
+		Vector3d tempVector3d = compute_test_FK(currFrameIndex);
+		std::cout << "tempVector3d is " << tempVector3d(0) << ", " << tempVector3d(1) << ", " << tempVector3d(2) << std::endl;
+		DrawingUtilNG::vertexF tempVertexF = { (float)tempVector3d(0), (float)tempVector3d(1),(float)tempVector3d(2) };
+		std::cout << "tempVertexF is " << (float)tempVector3d(0) << ", " << (float)tempVector3d(1) << ", " << (float)tempVector3d(2) << std::endl;
+		res.push_back(tempVertexF);
+	}
+	return res;
+}
+
+void Arm::testing_compute_test_FK_all()
+{
+	std::vector<DrawingUtilNG::vertexF>res = compute_test_FK_all();
+	std::cout << "Waiting" << std::endl; //set a stop on this line and check value of res by hovering mouse over the "res" on previous line
+}
+
+

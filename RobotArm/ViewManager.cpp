@@ -47,7 +47,7 @@ void ViewManager::manage()
 	draw_environment3D();
 	draw_goal();
 
-	/*std::vector<double>armPosition{ PI/4, 0., PI };
+	/*std::vector<double>armPosition{ PI/4, PI / 4, PI / 4 };
 	theArm.moveArm(armPosition);*/
 	/*controlArm();*/
 	theArm.draw();
@@ -101,6 +101,11 @@ void ViewManager::user_controls_read()
 	// compute IK on press of space bar
 	if (key == FSKEY_SPACE)
 		controlArm();
+
+	// compute test end point FKs on press of Z
+	if (key == FSKEY_Z)
+		theArm.testing_compute_test_FK_all(); // you need to put a stop on the cout line of this function and check the computed value by hovering mouse over that value
+		//theArm.compute_test_FK_all(); // prints out values in the console
 
 }
 
@@ -286,10 +291,11 @@ void ViewManager::controlArm()
 	theArm.moveArm(temp);
 	/*theArm.moveArm(-newJointVariables(0), newJointVariables(1), newJointVariables(2));*/
 
+	// this part is now taken care of by the moveArm function
 	// The test frames, though, need to store the correct joint variables for the next IK to start from the correct joint configuration
 	// thus no negative sign in front of the first joint variable
-	std::vector<double>testJointVariables_regularVec = InverseKinematics::vector3dToRegularVector(newJointVariables);
-	theArm.updateTestFrames(testJointVariables_regularVec);// to be extra safe that it's updated
+	//std::vector<double>testJointVariables_regularVec = InverseKinematics::vector3dToRegularVector(newJointVariables);
+	//theArm.updateTestFrames(testJointVariables_regularVec);// to be extra safe that it's updated
 
 	/*theArm.updateTestFrames(newJointVariables(0), newJointVariables(1), newJointVariables(2)); */
 	/*theArm.draw();*/
