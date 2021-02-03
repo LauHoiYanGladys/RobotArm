@@ -239,7 +239,7 @@ void DHframe::printTransformMatrix()
 void DHframe::drawLink()
 {
 	if (link != nullptr) {
-		glColor3ub(255, 0, 0);	//red
+		glColor3ub(200, 0, 0);	//red
 
 		//if (joint != nullptr) {
 		//	if (joint->type == Joint::revolute)

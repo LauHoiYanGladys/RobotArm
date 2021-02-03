@@ -46,6 +46,7 @@ void ViewManager::manage()
 
 	//do the 3D drawing
 	draw_environment3D();
+	draw_start();
 	draw_goal();
 
 	/*std::vector<double>armPosition{ PI/4, PI / 4, PI / 4 };
@@ -57,13 +58,15 @@ void ViewManager::manage()
 	draw_overlay2D();
 
 	FsSwapBuffers();
-	FsSleep(5);
+	FsSleep(10);
 }
 
 void ViewManager::user_controls_read()
 {
+	std::cout << "lastKey = " << lastKey << '\n';
 	FsPollDevice();
 	int key = FsInkey();
+	std::cout << "key = " << key << '\n';
 
 	//move camera around
 	if (FsGetKeyState(FSKEY_RIGHT))
@@ -85,8 +88,20 @@ void ViewManager::user_controls_read()
 	theOrbiter.setUpCamera(theCamera);
 	theCamera.farZ = view_dist + theOrbiter.dist;
 
-	//move the goal position
-	goalMoved = false;
+	//toggle moving start or goal position
+	if (FsGetKeyState(FSKEY_T) && key != lastKey) {
+		switch (moveToggle) {
+		case moveGoal:
+			moveToggle = moveStart;
+			break;
+		case moveStart:
+			moveToggle = moveGoal;
+			break;
+		}
+	}
+		
+	//move the start/goal position
+	goalMoved = startMoved = false;
 	if (FsGetKeyState(FSKEY_D) && goal.x < mapsize) {
 		goal.x += 0.5;
 		goalMoved = true;
@@ -121,6 +136,9 @@ void ViewManager::user_controls_read()
 		theArm.testing_compute_test_FK_all(); // you need to put a stop on the cout line of this function and check the computed value by hovering mouse over that value
 		//theArm.compute_test_FK_all(); // prints out values in the console
 
+
+	//update last key pressed
+	if (key != 0) lastKey = key;
 }
 
 void ViewManager::draw_environment3D()
@@ -183,6 +201,37 @@ void ViewManager::draw_environment3D()
 
 }
 
+void ViewManager::draw_start()
+{
+	double start_size = 3; //size of start position indicator
+
+	//set up for 3D drawing
+	theCamera.setUpCameraProjection();
+	theCamera.setUpCameraTransformation();
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_POLYGON_OFFSET_FILL);
+	glPolygonOffset(1, 1);
+
+	//quad for the shadow on ground
+	double shadow_offset = 0;
+	glBegin(GL_QUADS);
+	glColor3ub(100, 200, 100);	//dark green
+	glVertex3f(start_size * 1.05 / 2 + start.x, shadow_offset, -start_size * 1.05 / 2 - start.y);
+	glVertex3f(-start_size * 1.05 / 2 + start.x, shadow_offset, -start_size * 1.05 / 2 - start.y);
+	glVertex3f(-start_size * 1.05 / 2 + start.x, shadow_offset, start_size * 1.05 / 2 - start.y);
+	glVertex3f(start_size * 1.05 / 2 + start.x, shadow_offset, start_size * 1.05 / 2 - start.y);
+	glEnd();
+
+	//draw cube for showing start position in 3D
+	glPushMatrix();
+	glTranslatef(start.x, start.z, -start.y);	//order of x,y,z is reoriented with negative in front of y to account for OpenGL conventions
+
+	glColor3ub(0, 255, 0);	//bright green
+	DrawingUtilNG::drawCube(start_size);
+
+	glPopMatrix();
+}
+
 void ViewManager::draw_goal()
 {
 	double goal_size = 3; //size of goal position indicator
@@ -208,7 +257,7 @@ void ViewManager::draw_goal()
 	glPushMatrix();
 	glTranslatef(goal.x, goal.z, -goal.y);	//order of x,y,z is reoriented with negative in front of y to account for OpenGL conventions
 
-	glColor3ub(0, 255, 0);	//bright green
+	glColor3ub(255, 0, 0);	//bright red
 	DrawingUtilNG::drawCube(goal_size);
 
 	glPopMatrix();
@@ -233,10 +282,14 @@ void ViewManager::draw_overlay2D()
 
 	//controls - top left of screen
 	textfont.drawText("controls:", 10, 30, .31);
-	textfont.drawText("W, A, S, D, E, C - move goal position", 10, 50, .25);
-	textfont.drawText("arrow keys, F, B - move camera", 10, 65, .25);
-	textfont.drawText("space            - update arm position", 10, 80, .25);
-	//textfont.drawText("something else here", 10, 95, .31);
+	textfont.drawText("W, A, S, D, E, C - move start/goal position", 10, 50, .25);
+	textfont.drawText("               T - toggle start/goal movement", 10, 65, .25);
+	textfont.drawText("arrow keys, F, B - move camera", 10, 80, .25);
+	textfont.drawText("           space - update arm position", 10, 95, .25);
+
+	textfont.drawText("currently moving: ", 10, 130, .31);
+	if (moveToggle == moveGoal) textfont.drawText("GOAL", 205, 130, .31);
+	if (moveToggle == moveStart) textfont.drawText("START", 205, 130, .31);
 
 	//camera metrics - lower left of screen
 	textfont.drawText("camera stats", 10, win_height - 145, .31);
@@ -273,7 +326,25 @@ void ViewManager::draw_overlay2D()
 	textfont.drawText(data, 10, win_height - 20, .32);
 	datastring.str("");
 
-	//goal position - lower right of screen
+	//start & goal position - lower right of screen
+	textfont.drawText("start pos", win_width - 130, win_height - 175, .31);
+
+	datastring << fixed << setprecision(2);
+	datastring << "x:" << start.x;
+	data = datastring.str();
+	textfont.drawText(data, win_width - 130, win_height - 150, .32);
+	datastring.str("");
+
+	datastring << "y:" << start.y;
+	data = datastring.str();
+	textfont.drawText(data, win_width - 130, win_height - 130, .32);
+	datastring.str("");
+
+	datastring << "z:" << start.z;
+	data = datastring.str();
+	textfont.drawText(data, win_width - 130, win_height - 110, .32);
+	datastring.str("");
+
 	textfont.drawText("goal pos", win_width - 130, win_height - 85, .31);
 
 	datastring << fixed << setprecision(2);

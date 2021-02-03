@@ -23,12 +23,21 @@ public:
 
 	int mapsize = 250;				//size of environment map
 
-	DrawingUtilNG::vertexF goal = { 50,10,30 };	//goal position for end effector
-	bool goalMoved = false;			//boolean for whether the goal position has changed
+	DrawingUtilNG::vertexF start = { -50,10,30 };	//start position for end effector
+	bool startMoved = false;						//boolean for whether the start position has changed
+
+	DrawingUtilNG::vertexF goal = { 50,10,30 };		//goal position for end effector
+	bool goalMoved = false;							//boolean for whether the goal position has changed
+
+	//keep track of whether user is adjusting start or goal position
+	enum moveToggleEnum { moveStart, moveGoal };
+	moveToggleEnum moveToggle = moveStart;
 
 	//timestamp of the last time the arm calculated its position
 	std::chrono::system_clock::time_point prevArmMoveTime;// = std::chrono::system_clock::now();
 	double moveTimeThresh = 20;   //how much time (in ms) the arm will wait until next move calculation
+
+	int lastKey = -1;	//value of the last key press
 
 	//constructor calls the initialize function
 	ViewManager()/*: theIK(0, 0, 0, &theArm)*/  {
@@ -49,6 +58,9 @@ public:
 
 	//draws 3D environment that robot arm is in
 	void draw_environment3D();
+
+	//draws start position for end effector
+	void draw_start();
 
 	//draws goal position for end effector
 	void draw_goal();
