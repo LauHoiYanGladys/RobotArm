@@ -20,6 +20,7 @@ void ViewManager::initialize()
 	theCamera.farZ = view_dist + theOrbiter.dist;
 	/*theArm.buildArm_PUMA560();*/
 	theArm.buildArm();
+	controlArm();
 }
 
 void ViewManager::manage()
@@ -33,7 +34,7 @@ void ViewManager::manage()
 	auto currentTime = std::chrono::system_clock::now();
 	double elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds> (currentTime - prevArmMoveTime).count();
 	//cout << "elapsed time: " << elapsedTime << '\n';
-	if (elapsedTime > moveTimeThresh && goalIsMoving()) {
+	if (elapsedTime > moveTimeThresh && goalMoved) {
 
 		controlArm();
 		prevArmMoveTime = currentTime;
@@ -83,20 +84,33 @@ void ViewManager::user_controls_read()
 	//update camera views based on keyboard inputs above
 	theOrbiter.setUpCamera(theCamera);
 	theCamera.farZ = view_dist + theOrbiter.dist;
-		
-	if (FsGetKeyState(FSKEY_D) && goal.x < mapsize)
-		goal.x += 0.5;
-	if (FsGetKeyState(FSKEY_A) && goal.x > -mapsize)
-		goal.x -= 0.5;
-	if (FsGetKeyState(FSKEY_W) && goal.y < mapsize)
-		goal.y += 0.5;
-	if (FsGetKeyState(FSKEY_S) && goal.y > -mapsize)
-		goal.y -= 0.5;
 
-	if (FsGetKeyState(FSKEY_E))
+	//move the goal position
+	goalMoved = false;
+	if (FsGetKeyState(FSKEY_D) && goal.x < mapsize) {
+		goal.x += 0.5;
+		goalMoved = true;
+	}
+	if (FsGetKeyState(FSKEY_A) && goal.x > -mapsize) {
+		goal.x -= 0.5;
+		goalMoved = true;
+	}
+	if (FsGetKeyState(FSKEY_W) && goal.y < mapsize) {
+		goal.y += 0.5;
+		goalMoved = true;
+	}
+	if (FsGetKeyState(FSKEY_S) && goal.y > -mapsize) {
+		goal.y -= 0.5;
+		goalMoved = true;
+	}
+	if (FsGetKeyState(FSKEY_E)) {
 		goal.z += 0.5;
-	if (FsGetKeyState(FSKEY_C))
+		goalMoved = true;
+	}
+	if (FsGetKeyState(FSKEY_C)) {
 		goal.z -= 0.5;
+		goalMoved = true;
+	}
 
 	// compute IK on press of space bar
 	if (key == FSKEY_SPACE)
@@ -212,12 +226,19 @@ void ViewManager::draw_overlay2D()
 	glLoadIdentity();
 	glDisable(GL_DEPTH_TEST);
 
-	//metrics
+	//set up for writing text
 	textfont.setColorRGB(0, 0, 0);
 	stringstream datastring;
 	string data;
 
-	//camera metrics - lower left
+	//controls - top left of screen
+	textfont.drawText("controls:", 10, 30, .31);
+	textfont.drawText("W, A, S, D, E, C - move goal position", 10, 50, .25);
+	textfont.drawText("arrow keys, F, B - move camera", 10, 65, .25);
+	textfont.drawText("space            - update arm position", 10, 80, .25);
+	//textfont.drawText("something else here", 10, 95, .31);
+
+	//camera metrics - lower left of screen
 	textfont.drawText("camera stats", 10, win_height - 145, .31);
 
 	datastring << fixed << setprecision(1);
@@ -252,7 +273,7 @@ void ViewManager::draw_overlay2D()
 	textfont.drawText(data, 10, win_height - 20, .32);
 	datastring.str("");
 
-	//goal position - lower right
+	//goal position - lower right of screen
 	textfont.drawText("goal pos", win_width - 130, win_height - 85, .31);
 
 	datastring << fixed << setprecision(2);
@@ -290,14 +311,15 @@ void ViewManager::controlArm()
 	
 }
 
-bool ViewManager::goalIsMoving()
-{
-	if (FsGetKeyState(FSKEY_D) && goal.x < mapsize ||
-		FsGetKeyState(FSKEY_A) && goal.x > -mapsize ||
-		FsGetKeyState(FSKEY_S) && goal.y < mapsize ||
-		FsGetKeyState(FSKEY_E) ||
-		FsGetKeyState(FSKEY_C))
-		return true;
-	else
-		return false;
-}
+//bool ViewManager::goalIsMoving()
+//{
+//	if (FsGetKeyState(FSKEY_D) /*&& goal.x < mapsize */||
+//		FsGetKeyState(FSKEY_A) /*&& goal.x > -mapsize */||
+//		FsGetKeyState(FSKEY_S) /*&& goal.y < mapsize */||
+//		FsGetKeyState(FSKEY_W) ||
+//		FsGetKeyState(FSKEY_E) ||
+//		FsGetKeyState(FSKEY_C))
+//		return true;
+//	else
+//		return false;
+//}
