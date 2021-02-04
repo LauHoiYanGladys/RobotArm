@@ -23,7 +23,7 @@ public:
 
 	int mapsize = 250;				//size of environment map
 
-	DrawingUtilNG::vertexF start = { -50,10,30 };	//start position for end effector
+	DrawingUtilNG::vertexF start = { 60,20,50 };	//start position for end effector
 	bool startMoved = false;						//boolean for whether the start position has changed
 
 	DrawingUtilNG::vertexF goal = { 50,10,30 };		//goal position for end effector
@@ -31,7 +31,7 @@ public:
 
 	//keep track of whether user is adjusting start or goal position
 	enum moveToggleEnum { moveStart, moveGoal };
-	moveToggleEnum moveToggle = moveStart;
+	moveToggleEnum moveToggle = moveGoal;
 
 	//timestamp of the last time the arm calculated its position
 	std::chrono::system_clock::time_point prevArmMoveTime;// = std::chrono::system_clock::now();
