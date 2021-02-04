@@ -89,7 +89,7 @@ void ViewManager::user_controls_read()
 	theCamera.farZ = view_dist + theOrbiter.dist;
 
 	//toggle moving start or goal position
-	if (FsGetKeyState(FSKEY_T) && key != lastKey) {
+	if (FsGetKeyState(FSKEY_T)) {
 		switch (moveToggle) {
 		case moveGoal:
 			moveToggle = moveStart;
@@ -138,7 +138,7 @@ void ViewManager::user_controls_read()
 
 
 	//update last key pressed
-	if (key != 0) lastKey = key;
+	lastKey = key;
 }
 
 void ViewManager::draw_environment3D()

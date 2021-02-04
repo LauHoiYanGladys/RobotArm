@@ -151,6 +151,7 @@
     <ClCompile Include="InverseKinematics.cpp" />
     <ClCompile Include="Joint.cpp" />
     <ClCompile Include="Link.cpp" />
+    <ClCompile Include="Obstacle.cpp" />
     <ClCompile Include="OrbitingViewer.cpp" />
     <ClCompile Include="robot_simulation.cpp" />
     <ClCompile Include="ViewManager.cpp" />
@@ -166,6 +167,7 @@
     <ClInclude Include="InverseKinematics.h" />
     <ClInclude Include="Joint.h" />
     <ClInclude Include="Link.h" />
+    <ClInclude Include="Obstacle.h" />
     <ClInclude Include="OrbitingViewer.h" />
     <ClInclude Include="ViewManager.h" />
     <ClInclude Include="yspng.h" />
