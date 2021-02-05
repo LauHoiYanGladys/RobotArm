@@ -18,8 +18,8 @@ void ViewManager::initialize()
 	theOrbiter.h = 0.;
 
 	theCamera.farZ = view_dist + theOrbiter.dist;
-	/*theArm.buildArm_PUMA560();*/
-	theArm.buildArm();
+	theArm.buildArm_PUMA560();
+	/*theArm.buildArm();*/
 }
 
 void ViewManager::manage()
