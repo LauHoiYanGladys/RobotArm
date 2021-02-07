@@ -25,6 +25,7 @@ InverseKinematics::InverseKinematics(double x, double y, double z, Arm* inputArm
 	maxIteration = 700;
 	stopThreshold = 1;
 	delta = 0.001;
+	workspaceThreshold = inputArm->workspaceThreshold;
 }
 
 void/*Vector3d*//*double*/ InverseKinematics::computeCostGradient()
@@ -121,10 +122,11 @@ void InverseKinematics::update()
 	/*std::cout << "Update done" << std::endl;*/
 }
 
-void InverseKinematics::getIK()
+bool InverseKinematics::getIK()
 {
 	int counter = 1;
 	double updateAmount;
+	double costAfterConstraint;
  	theCurrCost = computeCost(costType::currCost);
 
 	costChange = -1.;
@@ -134,39 +136,43 @@ void InverseKinematics::getIK()
 		theNewCost = computeCost(costType::newCost);
 		costChange = theNewCost - theCurrCost;
 
-		counter++;
-
+		
 		//std::cout << "original test joint variables are " << testJointVariables << std::endl;
 		//std::cout << "new test joint variables are " << new_testJointVariables << std::endl;
 		/*std::cout << "Iteration " << counter << std::endl;*/
 		/*std::cout << "costChange " << costChange << std::endl;*/
 
+
 		// early terminate while loop if new cost is low or amount of update is small
 		if (costChangeStopThreshold != NULL) {
 			if (theNewCost < stopThreshold || abs(costChange) < costChangeStopThreshold) {
 				std::cout << "Gradient descend early ended on iteration " << counter << std::endl;
-				std::cout << "Ending new cost is " << theNewCost << std::endl;
+				std::cout << "Ending cost after IK is " << theCurrCost << std::endl;
 				constrainPrismatic(); // keep prismatic joint variable >= 0 
 				std::cout << "Final joint variables are " << std::endl;
 				std::cout << testJointVariables << std::endl;
-				return;
+				costAfterConstraint = computeCost(costType::currCost);
+				std::cout << "Ending cost after constraint is " << costAfterConstraint << std::endl;
+				return isInsideWorkspace(costAfterConstraint);
 
 			}
 		}
 		else {
 			if (theNewCost < stopThreshold) {
 				std::cout << "Gradient descend early ended on iteration " << counter << std::endl;
-				std::cout << "Ending new cost is " << theNewCost << std::endl;
+				std::cout << "Ending cost after IK is " << theCurrCost << std::endl;
 				constrainPrismatic(); // keep prismatic joint variable >= 0 
 				std::cout << "Final joint variables are " << std::endl;
 				std::cout << testJointVariables << std::endl;
-				return;
+				costAfterConstraint = computeCost(costType::currCost);
+				std::cout << "Ending new cost after constraint is " << costAfterConstraint << std::endl;
+				return isInsideWorkspace(costAfterConstraint);
 			}
 		}
 
-		
 		testJointVariables = new_testJointVariables;
 		theCurrCost = theNewCost;
+		counter++;
 
 	} while (counter < maxIteration);
 	
@@ -175,9 +181,19 @@ void InverseKinematics::getIK()
 
 	constrainPrismatic(); // keep prismatic joint variable >= 0 
 	std::cout << "Gradient descend ended after max iteration " << counter << std::endl;
-	std::cout << "Ending new cost is " << theNewCost << std::endl;
+	std::cout << "Ending cost is " << theCurrCost << std::endl;
 	std::cout << "Final joint variables are " << testJointVariables;
-	
+	costAfterConstraint = computeCost(costType::currCost);
+	std::cout << "Ending new cost after constraint is " << costAfterConstraint << std::endl;
+	return isInsideWorkspace(costAfterConstraint);
+}
+
+bool InverseKinematics::isInsideWorkspace(double theCost)
+{
+	if (theCost > workspaceThreshold)
+		return false;
+	else
+		return true;
 }
 
 void InverseKinematics::getIKAnalytical()

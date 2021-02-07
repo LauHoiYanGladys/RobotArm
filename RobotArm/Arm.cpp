@@ -58,6 +58,7 @@ void Arm::buildArm()
 	alpha = 0.00001; // learning rate for revolute joint
 	alphaPris = 0.5; // learning rate for prismatic joint
 	costChangeStopThreshold = NULL; // slow response at certain goal positions if cost change is an IK stop criterion for this arm
+	workspaceThreshold = 1.5;
 
 	// define the 0th DH frame
 	DHframe* zerothFrame = new DHframe();
@@ -182,6 +183,7 @@ void Arm::buildArm_PUMA560()
 {
 	alpha = 0.001; // learning rate
 	costChangeStopThreshold = 0.02;
+	workspaceThreshold = 1.5;
 
 	// some link parameters
 	double secondLinkOffset = 5.; 
@@ -294,7 +296,7 @@ void Arm::buildArm_SCARA()
 	alpha = 0.001; // learning rate for revolute joint
 	alphaPris = 0.6; // learning rate for prismatic joint
 	costChangeStopThreshold = 0.02;
-
+	workspaceThreshold = 1.5;
 
 	double zerothLinkLength = 25.;
 	double firstLinkOffset = 5.;

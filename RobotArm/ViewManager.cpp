@@ -390,9 +390,10 @@ void ViewManager::draw_overlay2D()
 
 }
 
-void ViewManager::controlArm()
+bool ViewManager::controlArm()
 {
 	Vector3d newJointVariables;
+	bool isInsideWorkspace;
 	// compute IK from current joint variables
 	double xpos, ypos, zpos;
 	if (moveToggle == moveStart) {
@@ -408,7 +409,7 @@ void ViewManager::controlArm()
 
 	InverseKinematics theIK(xpos, ypos, zpos, &theArm);
 	/*theIK.getIKAnalytical();*/
-	theIK.getIK();
+	isInsideWorkspace = theIK.getIK();
 	theIK.getResult(newJointVariables);
 
 	/*std::cout << "newJointVariables are " << newJointVariables << std::endl;*/
@@ -416,7 +417,11 @@ void ViewManager::controlArm()
 	// draw arm with updated joint variables
 	std::vector<double>temp = InverseKinematics::vector3dToRegularVector(newJointVariables);
 	theArm.moveArm(temp);
-	
+	if (isInsideWorkspace)
+		std::cout << "Goal position is inside workspace" << std::endl;
+	else
+		std::cout << "Goal position is NOT inside workspace" << std::endl;
+	return isInsideWorkspace;
 }
 
 //bool ViewManager::goalIsMoving()

@@ -35,6 +35,7 @@ public:
 	double alpha; // learning rate for revolute joint
 	double alphaPris; // learning rate for prismatic joint
 	double costChangeStopThreshold; // stop IK when cost change is less than this threshold
+	double workspaceThreshold; // the distance between end-effector and goal after IK above which the goal is deemed outside workspace
 
 	//draws the Arm in its current configuration
 	void draw();

@@ -41,7 +41,7 @@ private:
 	//double delta0, delta1, delta2; // for differentiation
 	double theCurrCost;
 	double theNewCost;
-
+	double workspaceThreshold; // the distance between end-effector and goal after IK above which the goal is deemed outside workspace
 public:
 	//// default constructor
 	//InverseKinematics() {};
@@ -60,8 +60,11 @@ public:
 	void update();
 
 	// performs gradient descent to find IK
-	void getIK();
+	bool getIK();
 	
+	// checks whether a certain goal position is inside workspace given the cost from the IK
+	bool isInsideWorkspace(double theCost);
+
 	// gets analytical IK
 	void getIKAnalytical();
 

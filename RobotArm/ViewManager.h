@@ -68,8 +68,8 @@ public:
 	//draws 2D HUD overlay (text, etc)
 	void draw_overlay2D();
 
-	// move arm according to IK results
-	void controlArm();
+	// move arm according to IK results, also outputs whether goal position is within the workspace (the threshold is set in Arm class upon building of arm)
+	bool controlArm();
 
 	// check whether goal is currently moving
 	//bool goalIsMoving();
