@@ -289,6 +289,120 @@ void Arm::buildArm_PUMA560()
 
 }
 
+void Arm::buildArm_SCARA()
+{
+	alpha = 0.001; // learning rate for revolute joint
+	alphaPris = 0.6; // learning rate for prismatic joint
+	costChangeStopThreshold = 0.02;
+
+
+	double zerothLinkLength = 25.;
+	double firstLinkOffset = 5.;
+	double firstLinkLength = 15.;
+	double secondLinkLength = 15.;
+
+	// define the 0th DH frame, note it is BEFORE the first joint (0th frame defined like this to make it easy to make a zeroth link to "elevate" the SCARA arm above ground); 
+	DHframe* zerothFrame = new DHframe();
+
+	// create zeroth link and assign to 0th DH frame
+	Link* zerothLink = new Link(zerothLinkLength);
+	zerothFrame->assignLink(zerothLink, Link::linkDirection::alongZ);
+	frameWithEndPoints.push_back(0);
+
+	// add zeroth DH frame to frame collection
+	theFrames.push_back(zerothFrame);
+
+	// define the first DH frame
+	DHframe* firstFrame = new DHframe(0., 0., zerothLinkLength, 0.);
+	firstFrame->assignParentDHframe(zerothFrame);
+	frameWithEndPoints.push_back(1); // although this end point is not necessary for the skeleton, it's defined so that each joint consistently coincide with endpoints 
+
+	// create the first (revolute) joint, assign to 1st DH frame
+	Joint* firstJoint = new Joint();
+	firstFrame->assignJoint(firstJoint);
+	jointFrameMap.insert({ firstJoint, firstFrame });
+	
+	// add the joint to the joint collection
+	theJoints.push_back(firstJoint);
+
+	// add first frame to frame collection
+	theFrames.push_back(firstFrame);
+
+	// define the second DH frame (defined to make it easy finding the positions of end points when firstLinkOffset is not zero) 
+	DHframe* secondFrame = new DHframe(0., 0., firstLinkOffset, 0.);
+	secondFrame->assignParentDHframe(firstFrame);
+	frameWithEndPoints.push_back(2);
+	// record the frame index 2 in the collection of indices of frames containing jointVariables
+	frameWithJointVariable.push_back(2);
+
+	// create the first link and assign it to the second DH frame
+	Link* firstLink = new Link(firstLinkLength);
+	secondFrame->assignLink(firstLink, Link::linkDirection::alongX);
+
+	// add DH frame to frame collection
+	theFrames.push_back(secondFrame);
+
+	// define the third DH frame
+	DHframe* thirdFrame = new DHframe(firstLinkLength, 0., 0., 0.);
+	thirdFrame->assignParentDHframe(secondFrame);
+	frameWithEndPoints.push_back(3);
+
+	// create the second (revolute) joint
+	// note that it corresponds to the third DH frame 
+	Joint* secondJoint = new Joint();
+	thirdFrame->assignJoint(secondJoint);
+	jointFrameMap.insert({ secondJoint, thirdFrame });
+	
+	// add the joint to the joint collection
+	theJoints.push_back(secondJoint);
+
+	// add third DH frame to frame collection
+	theFrames.push_back(thirdFrame);
+
+	// define the fourth DH frame
+	DHframe* fourthFrame = new DHframe(0., 0., 0., 0.);
+	fourthFrame->assignParentDHframe(thirdFrame);
+	// record the frame index 4 in the collection of indices of frames containing jointVariables
+	frameWithJointVariable.push_back(4);
+
+	// create second link and assign to fourth DH frame
+	Link* secondLink = new Link(secondLinkLength);
+	fourthFrame->assignLink(secondLink, Link::linkDirection::alongX);
+
+	// add fourth DH frame to frame collection
+	theFrames.push_back(fourthFrame);
+
+	// define the fifth DH frame
+	DHframe* fifthFrame = new DHframe(secondLinkLength, PI, 0., 0.);
+	fifthFrame->assignParentDHframe(fourthFrame);
+	frameWithEndPoints.push_back(5);
+	
+	// note that "third link length" is not defined and effectively set to zero
+	// create the third (prismatic) joint
+	// note that it corresponds to the fifth DH frame 
+	Joint* thirdJoint = new Joint();
+	thirdJoint->setJointTypePrismatic();
+	fifthFrame->assignJoint(thirdJoint);
+	jointFrameMap.insert({ thirdJoint, fifthFrame });
+
+	// add the joint to the joint collection
+	theJoints.push_back(thirdJoint);
+
+	// add fifth DH frame to frame collection
+	theFrames.push_back(fifthFrame);
+
+	// define the sixth DH frame (end-effector frame), note that the last revolute joint in a typical SCARA arm is skipped as we currently only model end-effector's position but not orientation
+	DHframe* sixthFrame = new DHframe(0., 0., 0., 0.); 
+	sixthFrame->assignParentDHframe(fifthFrame);
+	frameWithEndPoints.push_back(6);
+	// record the frame index 6 in the collection of indices of frames containing jointVariables
+	frameWithJointVariable.push_back(6);
+
+	// add DH frame to frame collection
+	theFrames.push_back(sixthFrame);
+
+}
+
 
 void Arm::moveArm(std::vector<double> jointVariables)
 {
@@ -327,6 +441,7 @@ Vector3d Arm::getTestJointVariable()
 {
 	Vector3d testJointVariables;
 	assert(testJointVariables.size() == frameWithJointVariable.size());
+	assert(frameWithJointVariable.back() < theFrames.size());
 	for (int i = 0; i < frameWithJointVariable.size(); i++) {
 		int currFrameIndex = frameWithJointVariable[i];
 		if (theJoints[i]->type == Joint::revolute)

@@ -239,7 +239,7 @@ void DHframe::printTransformMatrix()
 void DHframe::drawLink()
 {
 	if (link != nullptr) {
-		glColor3ub(255, 0, 0);	//red
+		glColor3ub(200, 0, 0);	//red
 
 		//if (joint != nullptr) {
 		//	if (joint->type == Joint::revolute)
@@ -269,8 +269,10 @@ void DHframe::drawJoint()
 			// prismatic joint itself without extension
 			DrawingUtilNG::drawPrismZ(4., 4., 10., 0, 0, 0);
 			glColor3ub(0, 191, 255);	//deep sky blue
-			// extension of prismatic joint ("center" shifted half the joint's original length in the z-direction)
-			DrawingUtilNG::drawPrismZOffset(4., 4., joint->jointVariable, 0, 0, 5.);
+			// extension of prismatic joint
+			// originally: "center" shifted half the joint's original length (5.) in the z-direction; 
+			// CURRENTLY: center not shifted because it somehow leads to wrong extension drawing in the SCARA arm; the extension made slightly slimmer than joint to make it look better
+			DrawingUtilNG::drawPrismZOffset(3.8, 3.8, joint->jointVariable, 0, 0, 0);
 		}
 	}
 }

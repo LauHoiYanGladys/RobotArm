@@ -45,6 +45,9 @@ public:
 	// builds the PUMA560 arm 
 	void buildArm_PUMA560();
 
+	// builds the SCARA arm
+	void buildArm_SCARA();
+
 	// changes joint variables given in a vector (theFrames and theJoints), also updates test frames to ensure next test frame computation is based on actual joint variables 
 	void moveArm(std::vector<double> jointVariables);
 

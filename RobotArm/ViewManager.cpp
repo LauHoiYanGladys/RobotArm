@@ -18,8 +18,11 @@ void ViewManager::initialize()
 	theOrbiter.h = 0.;
 
 	theCamera.farZ = view_dist + theOrbiter.dist;
-	theArm.buildArm_PUMA560();
-	/*theArm.buildArm();*/
+
+	/*theArm.buildArm_SCARA();*/
+	/*theArm.buildArm_PUMA560();*/
+	theArm.buildArm();
+	controlArm();
 }
 
 void ViewManager::manage()
@@ -33,7 +36,7 @@ void ViewManager::manage()
 	auto currentTime = std::chrono::system_clock::now();
 	double elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds> (currentTime - prevArmMoveTime).count();
 	//cout << "elapsed time: " << elapsedTime << '\n';
-	if (elapsedTime > moveTimeThresh && goalIsMoving()) {
+	if (elapsedTime > moveTimeThresh && goalMoved) {
 
 		controlArm();
 		prevArmMoveTime = currentTime;
@@ -45,9 +48,10 @@ void ViewManager::manage()
 
 	//do the 3D drawing
 	draw_environment3D();
+	draw_start();
 	draw_goal();
 
-	/*std::vector<double>armPosition{ PI/4, PI / 4, PI / 4 };
+	/*std::vector<double>armPosition{ PI/4, PI / 4, 10 };
 	theArm.moveArm(armPosition);*/
 	/*controlArm();*/
 	theArm.draw();
@@ -56,13 +60,15 @@ void ViewManager::manage()
 	draw_overlay2D();
 
 	FsSwapBuffers();
-	FsSleep(5);
+	FsSleep(10);
 }
 
 void ViewManager::user_controls_read()
 {
+	/*std::cout << "lastKey = " << lastKey << '\n';*/
 	FsPollDevice();
 	int key = FsInkey();
+	/*std::cout << "key = " << key << '\n';*/
 
 	//move camera around
 	if (FsGetKeyState(FSKEY_RIGHT))
@@ -83,20 +89,57 @@ void ViewManager::user_controls_read()
 	//update camera views based on keyboard inputs above
 	theOrbiter.setUpCamera(theCamera);
 	theCamera.farZ = view_dist + theOrbiter.dist;
-		
-	if (FsGetKeyState(FSKEY_D) && goal.x < mapsize)
-		goal.x += 0.5;
-	if (FsGetKeyState(FSKEY_A) && goal.x > -mapsize)
-		goal.x -= 0.5;
-	if (FsGetKeyState(FSKEY_W) && goal.y < mapsize)
-		goal.y += 0.5;
-	if (FsGetKeyState(FSKEY_S) && goal.y > -mapsize)
-		goal.y -= 0.5;
 
-	if (FsGetKeyState(FSKEY_E))
+	//toggle moving start or goal position
+	//TOGGLING DOESNT WORK, HAVE TO USE TWO SEPARATE KEYS
+	//if (FsGetKeyState(FSKEY_T)) {
+	//	switch (moveToggle) {
+	//	case moveGoal:
+	//		moveToggle = moveStart;
+	//		break;
+	//	case moveStart:
+	//		moveToggle = moveGoal;
+	//		break;
+	//	}
+	//}
+
+	//change between moving start or goal position
+	if (FsGetKeyState(FSKEY_T)) {
+		moveToggle = moveStart;
+		controlArm();
+	}
+	if (FsGetKeyState(FSKEY_G)) {
+		moveToggle = moveGoal;
+		controlArm();
+	}
+		
+	//move the start/goal position
+	goalMoved = startMoved = false;
+	double xpos, ypos, zpos = 0.; //IN PROGRESS
+	if (FsGetKeyState(FSKEY_D) && goal.x < mapsize) {
+		goal.x += 0.5;
+		goalMoved = true;
+	}
+	if (FsGetKeyState(FSKEY_A) && goal.x > -mapsize) {
+		goal.x -= 0.5;
+		goalMoved = true;
+	}
+	if (FsGetKeyState(FSKEY_W) && goal.y < mapsize) {
+		goal.y += 0.5;
+		goalMoved = true;
+	}
+	if (FsGetKeyState(FSKEY_S) && goal.y > -mapsize) {
+		goal.y -= 0.5;
+		goalMoved = true;
+	}
+	if (FsGetKeyState(FSKEY_E)) {
 		goal.z += 0.5;
-	if (FsGetKeyState(FSKEY_C))
+		goalMoved = true;
+	}
+	if (FsGetKeyState(FSKEY_C)) {
 		goal.z -= 0.5;
+		goalMoved = true;
+	}
 
 	// compute IK on press of space bar
 	if (key == FSKEY_SPACE)
@@ -107,6 +150,9 @@ void ViewManager::user_controls_read()
 		theArm.testing_compute_test_FK_all(); // you need to put a stop on the cout line of this function and check the computed value by hovering mouse over that value
 		//theArm.compute_test_FK_all(); // prints out values in the console
 
+
+	//update last key pressed
+	lastKey = key;
 }
 
 void ViewManager::draw_environment3D()
@@ -169,6 +215,37 @@ void ViewManager::draw_environment3D()
 
 }
 
+void ViewManager::draw_start()
+{
+	double start_size = 3; //size of start position indicator
+
+	//set up for 3D drawing
+	theCamera.setUpCameraProjection();
+	theCamera.setUpCameraTransformation();
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_POLYGON_OFFSET_FILL);
+	glPolygonOffset(1, 1);
+
+	//quad for the shadow on ground
+	double shadow_offset = 0;
+	glBegin(GL_QUADS);
+	glColor3ub(100, 200, 100);	//dark green
+	glVertex3f(start_size * 1.05 / 2 + start.x, shadow_offset, -start_size * 1.05 / 2 - start.y);
+	glVertex3f(-start_size * 1.05 / 2 + start.x, shadow_offset, -start_size * 1.05 / 2 - start.y);
+	glVertex3f(-start_size * 1.05 / 2 + start.x, shadow_offset, start_size * 1.05 / 2 - start.y);
+	glVertex3f(start_size * 1.05 / 2 + start.x, shadow_offset, start_size * 1.05 / 2 - start.y);
+	glEnd();
+
+	//draw cube for showing start position in 3D
+	glPushMatrix();
+	glTranslatef(start.x, start.z, -start.y);	//order of x,y,z is reoriented with negative in front of y to account for OpenGL conventions
+
+	glColor3ub(0, 255, 0);	//bright green
+	DrawingUtilNG::drawCube(start_size);
+
+	glPopMatrix();
+}
+
 void ViewManager::draw_goal()
 {
 	double goal_size = 3; //size of goal position indicator
@@ -194,7 +271,7 @@ void ViewManager::draw_goal()
 	glPushMatrix();
 	glTranslatef(goal.x, goal.z, -goal.y);	//order of x,y,z is reoriented with negative in front of y to account for OpenGL conventions
 
-	glColor3ub(0, 255, 0);	//bright green
+	glColor3ub(255, 0, 0);	//bright red
 	DrawingUtilNG::drawCube(goal_size);
 
 	glPopMatrix();
@@ -212,12 +289,30 @@ void ViewManager::draw_overlay2D()
 	glLoadIdentity();
 	glDisable(GL_DEPTH_TEST);
 
-	//metrics
+	//set up for writing text
 	textfont.setColorRGB(0, 0, 0);
 	stringstream datastring;
 	string data;
 
-	//camera metrics - lower left
+	//controls - top left of screen
+	textfont.drawText("controls:", 10, 30, .31);
+	textfont.drawText("W, A, S, D, E, C - move start/goal position", 10, 50, .25);
+	textfont.drawText("            T, G - toggle star(T)/(G)oal movement", 10, 65, .25);
+	textfont.drawText("arrow keys, F, B - move camera", 10, 80, .25);
+	textfont.drawText("           space - update arm position", 10, 95, .25);
+
+	textfont.drawText("currently moving: ", 10, 130, .31);
+	if (moveToggle == moveGoal) {
+		textfont.setColorRGB(0.8, 0, 0);
+		textfont.drawText("GOAL", 205, 130, .31);
+	}
+	if (moveToggle == moveStart) {
+		textfont.setColorRGB(0, 0.7, 0);
+		textfont.drawText("START", 205, 130, .31);
+	}
+	textfont.setColorRGB(0, 0, 0);
+
+	//camera metrics - lower left of screen
 	textfont.drawText("camera stats", 10, win_height - 145, .31);
 
 	datastring << fixed << setprecision(1);
@@ -252,8 +347,30 @@ void ViewManager::draw_overlay2D()
 	textfont.drawText(data, 10, win_height - 20, .32);
 	datastring.str("");
 
-	//goal position - lower right
+	//start & goal position - lower right of screen
+	textfont.setColorRGB(0, 0.7, 0);
+	textfont.drawText("start pos", win_width - 130, win_height - 175, .31);
+	textfont.setColorRGB(0, 0, 0);
+
+	datastring << fixed << setprecision(2);
+	datastring << "x:" << start.x;
+	data = datastring.str();
+	textfont.drawText(data, win_width - 130, win_height - 150, .32);
+	datastring.str("");
+
+	datastring << "y:" << start.y;
+	data = datastring.str();
+	textfont.drawText(data, win_width - 130, win_height - 130, .32);
+	datastring.str("");
+
+	datastring << "z:" << start.z;
+	data = datastring.str();
+	textfont.drawText(data, win_width - 130, win_height - 110, .32);
+	datastring.str("");
+
+	textfont.setColorRGB(0.8, 0, 0);
 	textfont.drawText("goal pos", win_width - 130, win_height - 85, .31);
+	textfont.setColorRGB(0, 0, 0);
 
 	datastring << fixed << setprecision(2);
 	datastring << "x:" << goal.x;
@@ -277,7 +394,19 @@ void ViewManager::controlArm()
 {
 	Vector3d newJointVariables;
 	// compute IK from current joint variables
-	InverseKinematics theIK(goal.x, goal.y, goal.z, &theArm);
+	double xpos, ypos, zpos;
+	if (moveToggle == moveStart) {
+		xpos = start.x;
+		ypos = start.y;
+		zpos = start.z;
+	}
+	if (moveToggle == moveGoal) {
+		xpos = goal.x;
+		ypos = goal.y;
+		zpos = goal.z;
+	}
+
+	InverseKinematics theIK(xpos, ypos, zpos, &theArm);
 	/*theIK.getIKAnalytical();*/
 	theIK.getIK();
 	theIK.getResult(newJointVariables);
@@ -290,14 +419,15 @@ void ViewManager::controlArm()
 	
 }
 
-bool ViewManager::goalIsMoving()
-{
-	if (FsGetKeyState(FSKEY_D) && goal.x < mapsize ||
-		FsGetKeyState(FSKEY_A) && goal.x > -mapsize ||
-		FsGetKeyState(FSKEY_S) && goal.y < mapsize ||
-		FsGetKeyState(FSKEY_E) ||
-		FsGetKeyState(FSKEY_C))
-		return true;
-	else
-		return false;
-}
+//bool ViewManager::goalIsMoving()
+//{
+//	if (FsGetKeyState(FSKEY_D) /*&& goal.x < mapsize */||
+//		FsGetKeyState(FSKEY_A) /*&& goal.x > -mapsize */||
+//		FsGetKeyState(FSKEY_S) /*&& goal.y < mapsize */||
+//		FsGetKeyState(FSKEY_W) ||
+//		FsGetKeyState(FSKEY_E) ||
+//		FsGetKeyState(FSKEY_C))
+//		return true;
+//	else
+//		return false;
+//}
