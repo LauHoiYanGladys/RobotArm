@@ -40,13 +40,9 @@ public:
 	std::chrono::system_clock::time_point prevArmMoveTime;// = std::chrono::system_clock::now();
 	double moveTimeThresh = 20;   //how much time (in ms) the arm will wait until next move calculation
 
-	int lastKey = -1;	//value of the last key press
-
 	//constructor calls the initialize function
-	ViewManager()/*: theIK(0, 0, 0, &theArm)*/  {
-		
+	ViewManager() {
 		initialize();
-		/*theIK = InverseKinematics(0, 0, 0, &theArm);*/
 	}
 
 	//initial setup

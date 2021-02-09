@@ -52,9 +52,6 @@ void ViewManager::manage()
 	draw_start();
 	draw_goal();
 
-	/*std::vector<double>armPosition{ PI/4, PI / 4, 10 };
-	theArm.moveArm(armPosition);*/
-	/*controlArm();*/
 	theArm.draw();
 
 	//do the 2D overlay drawing
@@ -66,10 +63,8 @@ void ViewManager::manage()
 
 void ViewManager::user_controls_read()
 {
-	/*std::cout << "lastKey = " << lastKey << '\n';*/
 	FsPollDevice();
 	int key = FsInkey();
-	/*std::cout << "key = " << key << '\n';*/
 
 	//move camera around
 	if (FsGetKeyState(FSKEY_RIGHT))
@@ -170,9 +165,6 @@ void ViewManager::user_controls_read()
 		theArm.testing_compute_test_FK_all(); // you need to put a stop on the cout line of this function and check the computed value by hovering mouse over that value
 		//theArm.compute_test_FK_all(); // prints out values in the console
 
-
-	//update last key pressed
-	lastKey = key;
 }
 
 void ViewManager::draw_environment3D()
@@ -414,23 +406,9 @@ bool ViewManager::controlArm()
 {
 	Vector3d newJointVariables;
 	bool isInsideWorkspace;
+	
 	// compute IK from current joint variables
-	double xpos, ypos, zpos;
-	//if (moveToggle == moveStart) {
-	//	xpos = start.x;
-	//	ypos = start.y;
-	//	zpos = start.z;
-	//}
-	//if (moveToggle == moveGoal) {
-	//	xpos = goal.x;
-	//	ypos = goal.y;
-	//	zpos = goal.z;
-	//}
-	xpos = arm_target.x;
-	ypos = arm_target.y;
-	zpos = arm_target.z;
-
-	InverseKinematics theIK(xpos, ypos, zpos, &theArm);
+	InverseKinematics theIK(arm_target.x, arm_target.y, arm_target.z, &theArm);
 	/*theIK.getIKAnalytical();*/
 	isInsideWorkspace = theIK.getIK();
 	theIK.getResult(newJointVariables);
