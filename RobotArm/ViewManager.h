@@ -29,6 +29,9 @@ public:
 	DrawingUtilNG::vertexF goal = { 50,10,30 };		//goal position for end effector
 	bool goalMoved = false;							//boolean for whether the goal position has changed
 
+	DrawingUtilNG::vertexF arm_target = goal;		//position that arm is targeting (start, goal, or maybe something in between?)
+	bool targetMoved = false;						//boolean for whether the arm's target position has changed
+
 	//keep track of whether user is adjusting start or goal position
 	enum moveToggleEnum { moveStart, moveGoal };
 	moveToggleEnum moveToggle = moveGoal;
@@ -71,7 +74,7 @@ public:
 	// move arm according to IK results, also outputs whether goal position is within the workspace (the threshold is set in Arm class upon building of arm)
 	bool controlArm();
 
-	// check whether goal is currently moving
-	//bool goalIsMoving();
+	//checks whether arm is able to reach the end effector goal position (without moving arm)
+	bool canArmReach(double xpos, double ypos, double zpos);
 };
 

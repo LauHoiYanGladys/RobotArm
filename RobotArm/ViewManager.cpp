@@ -19,9 +19,10 @@ void ViewManager::initialize()
 
 	theCamera.farZ = view_dist + theOrbiter.dist;
 
-	/*theArm.buildArm_SCARA();*/
-	theArm.buildArm_PUMA560();
-	/*theArm.buildArm();*/
+	theArm.buildArm_SCARA();
+	//theArm.buildArm_PUMA560();
+	//theArm.buildArm();
+
 	controlArm();
 }
 
@@ -36,7 +37,7 @@ void ViewManager::manage()
 	auto currentTime = std::chrono::system_clock::now();
 	double elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds> (currentTime - prevArmMoveTime).count();
 	//cout << "elapsed time: " << elapsedTime << '\n';
-	if (elapsedTime > moveTimeThresh && goalMoved) {
+	if (elapsedTime > moveTimeThresh && targetMoved) {
 
 		controlArm();
 		prevArmMoveTime = currentTime;
@@ -106,39 +107,58 @@ void ViewManager::user_controls_read()
 	//change between moving start or goal position
 	if (FsGetKeyState(FSKEY_T)) {
 		moveToggle = moveStart;
+		arm_target = start;
+		targetMoved = true;
 		controlArm();
 	}
 	if (FsGetKeyState(FSKEY_G)) {
 		moveToggle = moveGoal;
+		arm_target = goal;
+		targetMoved = true;
 		controlArm();
 	}
 		
 	//move the start/goal position
-	goalMoved = startMoved = false;
-	double xpos, ypos, zpos = 0.; //IN PROGRESS
+	goalMoved = startMoved = targetMoved = false;
+
 	if (FsGetKeyState(FSKEY_D) && goal.x < mapsize) {
-		goal.x += 0.5;
-		goalMoved = true;
+		arm_target.x += 0.5;
+		targetMoved = true;
 	}
 	if (FsGetKeyState(FSKEY_A) && goal.x > -mapsize) {
-		goal.x -= 0.5;
-		goalMoved = true;
+		arm_target.x -= 0.5;
+		targetMoved = true;
 	}
 	if (FsGetKeyState(FSKEY_W) && goal.y < mapsize) {
-		goal.y += 0.5;
-		goalMoved = true;
+		arm_target.y += 0.5;
+		targetMoved = true;
 	}
 	if (FsGetKeyState(FSKEY_S) && goal.y > -mapsize) {
-		goal.y -= 0.5;
-		goalMoved = true;
+		arm_target.y -= 0.5;
+		targetMoved = true;
 	}
 	if (FsGetKeyState(FSKEY_E)) {
-		goal.z += 0.5;
-		goalMoved = true;
+		arm_target.z += 0.5;
+		targetMoved = true;
 	}
 	if (FsGetKeyState(FSKEY_C)) {
-		goal.z -= 0.5;
-		goalMoved = true;
+		arm_target.z -= 0.5;
+		targetMoved = true;
+	}
+
+	if (targetMoved == true) {
+		if (moveToggle == moveStart) {
+			startMoved = true;
+			start.x = arm_target.x;
+			start.y = arm_target.y;
+			start.z = arm_target.z;
+		}
+		if (moveToggle == moveGoal) {
+			goalMoved = true;
+			goal.x = arm_target.x;
+			goal.y = arm_target.y;
+			goal.z = arm_target.z;
+		}
 	}
 
 	// compute IK on press of space bar
@@ -396,16 +416,19 @@ bool ViewManager::controlArm()
 	bool isInsideWorkspace;
 	// compute IK from current joint variables
 	double xpos, ypos, zpos;
-	if (moveToggle == moveStart) {
-		xpos = start.x;
-		ypos = start.y;
-		zpos = start.z;
-	}
-	if (moveToggle == moveGoal) {
-		xpos = goal.x;
-		ypos = goal.y;
-		zpos = goal.z;
-	}
+	//if (moveToggle == moveStart) {
+	//	xpos = start.x;
+	//	ypos = start.y;
+	//	zpos = start.z;
+	//}
+	//if (moveToggle == moveGoal) {
+	//	xpos = goal.x;
+	//	ypos = goal.y;
+	//	zpos = goal.z;
+	//}
+	xpos = arm_target.x;
+	ypos = arm_target.y;
+	zpos = arm_target.z;
 
 	InverseKinematics theIK(xpos, ypos, zpos, &theArm);
 	/*theIK.getIKAnalytical();*/
@@ -424,15 +447,10 @@ bool ViewManager::controlArm()
 	return isInsideWorkspace;
 }
 
-//bool ViewManager::goalIsMoving()
-//{
-//	if (FsGetKeyState(FSKEY_D) /*&& goal.x < mapsize */||
-//		FsGetKeyState(FSKEY_A) /*&& goal.x > -mapsize */||
-//		FsGetKeyState(FSKEY_S) /*&& goal.y < mapsize */||
-//		FsGetKeyState(FSKEY_W) ||
-//		FsGetKeyState(FSKEY_E) ||
-//		FsGetKeyState(FSKEY_C))
-//		return true;
-//	else
-//		return false;
-//}
+bool ViewManager::canArmReach(double xpos, double ypos, double zpos)
+{
+	InverseKinematics theIK(xpos, ypos, zpos, &theArm);
+	return theIK.getIK();
+}
+
+
