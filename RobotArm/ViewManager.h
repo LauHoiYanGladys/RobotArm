@@ -12,10 +12,10 @@ class ViewManager
 public:
 	static const double PI;
 	Arm theArm;
-	//InverseKinematics theIK;
 	Camera3D theCamera;
 	OrbitingViewer theOrbiter;
 	CourierNewFont textfont;
+
 	int win_width = 1024;			//window width for fssimplewindow
 	int win_height = 768;			//window height for fssimplewindow
 
@@ -32,6 +32,9 @@ public:
 	DrawingUtilNG::vertexF arm_target = goal;		//position that arm is targeting (start, goal, or maybe something in between?)
 	bool targetMoved = false;						//boolean for whether the arm's target position has changed
 
+	bool isArmReached = false;			//boolean for whether arm is able to reach desired end effector position
+	bool isArmIntersecting = false;		//boolean for whether arm is intersectino obstacles
+
 	//keep track of whether user is adjusting start or goal position
 	enum moveToggleEnum { moveStart, moveGoal };
 	moveToggleEnum moveToggle = moveGoal;
@@ -41,9 +44,7 @@ public:
 	double moveTimeThresh = 20;   //how much time (in ms) the arm will wait until next move calculation
 
 	//constructor calls the initialize function
-	ViewManager() {
-		initialize();
-	}
+	ViewManager() {initialize();}
 
 	//initial setup
 	void initialize();
