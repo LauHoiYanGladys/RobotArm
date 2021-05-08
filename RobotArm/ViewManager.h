@@ -11,7 +11,7 @@ class ViewManager
 {
 public:
 	static const double PI;
-	Arm theArm;
+	std::vector<Arm*> theArm; // a vector to contain the single arm present; has to be in vector so that it can be deleted upon switching arm type
 	Camera3D theCamera;
 	OrbitingViewer theOrbiter;
 	CourierNewFont textfont;
@@ -35,9 +35,21 @@ public:
 	bool isArmReached = false;			//boolean for whether arm is able to reach desired end effector position
 	bool isArmIntersecting = false;		//boolean for whether arm is intersectino obstacles
 
+	bool isTracing = false; // boolean for whether arm is currently tracing from start to goal
+
 	//keep track of whether user is adjusting start or goal position
 	enum moveToggleEnum { moveStart, moveGoal };
-	moveToggleEnum moveToggle = moveGoal;
+	moveToggleEnum moveToggle = moveStart;
+
+	// Type of arm to build
+	enum armType {stanford, puma, scara};
+	armType theArmType = scara;
+
+	// vector containers for waypoints
+	std::vector<DrawingUtilNG::vertexF> waypoints;
+	
+	// waypoint interval
+	int waypointInterval = 2;
 
 	//timestamp of the last time the arm calculated its position
 	std::chrono::system_clock::time_point prevArmMoveTime;// = std::chrono::system_clock::now();
@@ -73,5 +85,17 @@ public:
 
 	//checks whether arm is able to reach the end effector goal position (without moving arm)
 	bool canArmReach(double xpos, double ypos, double zpos);
+
+	// toggles between different arm types
+	void toggleArmType();
+
+	// deletes the old arm and builds a new arm
+	void buildNewArm(armType theArmType);
+
+	// creates a vector of waypoints between the start and goal
+	void createWaypoints();
+
+	// robot arm end effector traces the path from start to goal
+	void traceStartToEnd();
 };
 
