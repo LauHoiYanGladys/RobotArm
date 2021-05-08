@@ -20,8 +20,8 @@ void ViewManager::initialize()
 	theCamera.farZ = view_dist + theOrbiter.dist;
 
 	/*theArm.buildArm_SCARA();*/
-	/*theArm.buildArm_PUMA560();*/
-	theArm.buildArm();
+	theArm.buildArm_PUMA560();
+	/*theArm.buildArm();*/
 	controlArm();
 }
 
