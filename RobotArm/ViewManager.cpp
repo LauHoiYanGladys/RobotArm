@@ -1,8 +1,8 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
-#include <cmath>
-#include <math.h> /* sqrt */
+#include <chrono>
+#include <thread>
 #include "ViewManager.h"
 #include "DrawingUtilNG.h""
 
@@ -24,9 +24,9 @@ void ViewManager::initialize()
 	// create the arm and store it
 	Arm* newArm = new Arm();
 	theArm.push_back(newArm);
-	theArm[0]->buildArm_SCARA();
+	//theArm[0]->buildArm_SCARA();
 	//theArm[0]->buildArm_PUMA560();
-	//theArm[0]->buildArm();
+	theArm[0]->buildArm();
 
 	controlArm();
 }
@@ -42,8 +42,11 @@ void ViewManager::manage()
 	auto currentTime = std::chrono::system_clock::now();
 	double elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds> (currentTime - prevArmMoveTime).count();
 	//cout << "elapsed time: " << elapsedTime << '\n';
-	if (elapsedTime > moveTimeThresh && (targetMoved || isTracing)) {
-
+	if (elapsedTime > moveTimeThresh && targetMoved && !isTracing) {
+		controlArm();
+		prevArmMoveTime = currentTime;
+	}
+	if (elapsedTime > moveTimeThresh && !targetMoved && isTracing) {
 		controlArm();
 		prevArmMoveTime = currentTime;
 	}
@@ -122,6 +125,20 @@ void ViewManager::user_controls_read()
 	goalMoved = startMoved = targetMoved = false;
 
 	if (!isTracing) {
+		// if the end effector is not already at the start/goal position, put it there first
+		double distance;
+		if (moveToggle == moveStart) {
+			distance = sqrt(pow(start.x - arm_target.x, 2) + pow(start.y - arm_target.y, 2) + pow(start.z - arm_target.z, 2));
+		}
+		else {
+			distance = sqrt(pow(goal.x - arm_target.x, 2) + pow(goal.y - arm_target.y, 2) + pow(goal.z - arm_target.z, 2));
+		}
+
+		if (FsGetKeyState(FSKEY_D) || FsGetKeyState(FSKEY_A) || FsGetKeyState(FSKEY_W) ||
+			FsGetKeyState(FSKEY_S) || FsGetKeyState(FSKEY_E) || FsGetKeyState(FSKEY_C) && distance > 1) {
+			repositionEndEffector();
+		}
+		
 		if (FsGetKeyState(FSKEY_D) && goal.x < mapsize) {
 			arm_target.x += 0.5;
 			targetMoved = true;
@@ -177,8 +194,30 @@ void ViewManager::user_controls_read()
 		toggleArmType();
 
 	// trace from start to end
-	if (key == FSKEY_P) {
-		traceStartToEnd();
+	isTracing = false;
+	if (FsGetKeyState(FSKEY_P)) {
+		// compute current distance to goal
+		double currentDistance = sqrt(pow(goal.x - arm_target.x, 2) + pow(goal.y - arm_target.y, 2) + pow(goal.z - arm_target.z, 2));
+
+		// unit vector pointing from start to goal
+		DrawingUtilNG::vertexF unitVector = DrawingUtilNG::getUnitVector(start, goal);
+		// get a vector that is waypointInterval*unitVector
+		DrawingUtilNG::vertexF intervalVector = { unitVector.x * waypointInterval, unitVector.y * waypointInterval, unitVector.z * waypointInterval };
+		
+		// compute next distance to goal
+		double proposedArmTargetX = arm_target.x + intervalVector.x;
+		double proposedArmTargetY = arm_target.y + intervalVector.y;
+		double proposedArmTargetZ = arm_target.z + intervalVector.z;
+		double nextDistance = sqrt(pow(goal.x - proposedArmTargetX, 2) + pow(goal.y - proposedArmTargetY, 2) + pow(goal.z - proposedArmTargetZ, 2));
+
+		// change arm target position if moving will result in a smaller distance from the target
+		if (nextDistance < currentDistance) {
+			arm_target.x += intervalVector.x;
+			arm_target.y += intervalVector.y;
+			arm_target.z += intervalVector.z;
+
+			isTracing = true;
+		}
 	}
 }
 
@@ -433,11 +472,27 @@ bool ViewManager::controlArm()
 	// draw arm with updated joint variables
 	std::vector<double>temp = InverseKinematics::vector3dToRegularVector(newJointVariables);
 	theArm[0]->moveArm(temp);
-	if (isInsideWorkspace)
-		std::cout << "Goal position is inside workspace" << std::endl;
-	else
-		std::cout << "Goal position is NOT inside workspace" << std::endl;
+	if (isInsideWorkspace) {
+		std::stringstream ss0;
+		ss0 << "Goal position is inside workspace" << '\n';
+		OutputDebugStringA(ss0.str().c_str());
+	}
+	else {
+		std::stringstream ss0;
+		ss0 << "Goal position is NOT inside workspace" << '\n';
+		OutputDebugStringA(ss0.str().c_str());
+	}
 	return isInsideWorkspace;
+}
+
+void ViewManager::repositionEndEffector()
+{
+	if (moveToggle == moveStart) {
+		arm_target = start;
+	}
+	else {
+		arm_target = goal;
+	}
 }
 
 bool ViewManager::canArmReach(double xpos, double ypos, double zpos)
@@ -479,76 +534,6 @@ void ViewManager::buildNewArm(armType theArmType)
 	else if (theArmType == stanford) {
 		theArm[0]->buildArm();
 	}
-}
-
-void ViewManager::createWaypoints()
-{
-	DrawingUtilNG::vertexF lastVector;
-
-	// clear any old way points
-	if (!waypoints.empty())
-		waypoints.clear();
-
-	double distance = sqrt(pow(goal.x - start.x, 2) + pow(goal.y - start.y, 2) + pow(goal.z - start.z, 2));
-	int numWaypoints = ceil(distance) / waypointInterval - 1;
-	numWaypoints = std::max(numWaypoints, 0);
-
-	// no need to set upper limit
-	//numWaypoints = std::min(numWaypoints, 20); 
-
-	// unit vector pointing from start to goal
-	DrawingUtilNG::vertexF unitVector = DrawingUtilNG::getUnitVector(goal, start);
-	// get a vector that is waypointInterval*unitVector
-	DrawingUtilNG::vertexF intervalVector = { unitVector.x * waypointInterval, unitVector.y * waypointInterval, unitVector.z * waypointInterval };
-
-	if (numWaypoints != 0) {
-		for (int i = 0; i < numWaypoints; i++) {
-			if (i == 0)
-				lastVector = start;
-			else
-				lastVector = waypoints.back();
-			DrawingUtilNG::vertexF nextWaypoint = { lastVector.x + intervalVector.x, lastVector.y + intervalVector.y, lastVector.z + intervalVector.z };
-			waypoints.push_back(nextWaypoint);
-		}
-	}
-}
-
-void ViewManager::traceStartToEnd()
-{
-	isTracing = true;
-
-	// make the waypoints
-	createWaypoints();
-
-	// move arm to start point
-	arm_target = start;
-
+	// position the new arm's end effector at the current target
 	controlArm();
-	//theArm[0]->draw();
-
-	// move arm through waypoints if there are any
-	if (!waypoints.empty()) {
-		for (std::vector<DrawingUtilNG::vertexF>::iterator it = waypoints.begin(); it != waypoints.end(); it++) {
-			arm_target = *it;
-			controlArm();
-			//theArm[0]->draw();
-		}
-		// move to goal point after going through waypoints
-		arm_target = goal;
-
-		controlArm();
-		//theArm[0]->draw();
-	}
-	// otherwise just move arm to goal point
-	else {
-		arm_target = goal;
-
-		controlArm();
-		//theArm[0]->draw();
-	}
-	moveToggle = moveGoal; // make the goal moving
-	isTracing = false;
-	
 }
-
-

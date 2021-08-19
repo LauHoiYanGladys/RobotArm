@@ -29,13 +29,15 @@ public:
 	DrawingUtilNG::vertexF goal = { 50,10,30 };		//goal position for end effector
 	bool goalMoved = false;							//boolean for whether the goal position has changed
 
-	DrawingUtilNG::vertexF arm_target = goal;		//position that arm is targeting (start, goal, or maybe something in between?)
+	DrawingUtilNG::vertexF arm_target = start;		//position that arm is targeting (start, goal, or maybe something in between?)
 	bool targetMoved = false;						//boolean for whether the arm's target position has changed
 
 	bool isArmReached = false;			//boolean for whether arm is able to reach desired end effector position
 	bool isArmIntersecting = false;		//boolean for whether arm is intersectino obstacles
 
 	bool isTracing = false; // boolean for whether arm is currently tracing from start to goal
+
+	bool tracingPrelimsAreSet = false; // true if preliminaries are computed before tracing starts
 
 	//keep track of whether user is adjusting start or goal position
 	enum moveToggleEnum { moveStart, moveGoal };
@@ -50,6 +52,9 @@ public:
 	
 	// waypoint interval
 	int waypointInterval = 2;
+
+	// true if current arm control has been completed
+	bool armControlCompleted = false;
 
 	//timestamp of the last time the arm calculated its position
 	std::chrono::system_clock::time_point prevArmMoveTime;// = std::chrono::system_clock::now();
@@ -83,6 +88,9 @@ public:
 	// move arm according to IK results, also outputs whether goal position is within the workspace (the threshold is set in Arm class upon building of arm)
 	bool controlArm();
 
+	// reposition end effector at current move target (start/goal)
+	void repositionEndEffector();
+
 	//checks whether arm is able to reach the end effector goal position (without moving arm)
 	bool canArmReach(double xpos, double ypos, double zpos);
 
@@ -91,11 +99,5 @@ public:
 
 	// deletes the old arm and builds a new arm
 	void buildNewArm(armType theArmType);
-
-	// creates a vector of waypoints between the start and goal
-	void createWaypoints();
-
-	// robot arm end effector traces the path from start to goal
-	void traceStartToEnd();
 };
 
