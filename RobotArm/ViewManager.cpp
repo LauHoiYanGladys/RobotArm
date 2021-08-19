@@ -1,8 +1,5 @@
-#include <iostream>
-#include <sstream>
 #include <iomanip>
 #include <chrono>
-#include <thread>
 #include "ViewManager.h"
 #include "DrawingUtilNG.h""
 
@@ -24,9 +21,12 @@ void ViewManager::initialize()
 	// create the arm and store it
 	Arm* newArm = new Arm();
 	theArm.push_back(newArm);
+
+	// The following determines which arm is the initial arm
 	//theArm[0]->buildArm_SCARA();
 	//theArm[0]->buildArm_PUMA560();
-	theArm[0]->buildArm();
+	theArm[0]->buildArm_Stanford();
+	theArmType = stanford;
 
 	controlArm();
 }
@@ -41,7 +41,6 @@ void ViewManager::manage()
 	//move arm if enough time has passed between calcs
 	auto currentTime = std::chrono::system_clock::now();
 	double elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds> (currentTime - prevArmMoveTime).count();
-	//cout << "elapsed time: " << elapsedTime << '\n';
 	if (elapsedTime > moveTimeThresh && targetMoved && !isTracing) {
 		controlArm();
 		prevArmMoveTime = currentTime;
@@ -179,15 +178,6 @@ void ViewManager::user_controls_read()
 			}
 		}
 	}
-
-	// compute IK on press of space bar
-	if (key == FSKEY_SPACE)
-		controlArm();
-
-	// compute test end point FKs on press of Z
-	if (key == FSKEY_Z)
-		theArm[0]->testing_compute_test_FK_all(); // you need to put a stop on the cout line of this function and check the computed value by hovering mouse over that value
-		//theArm.compute_test_FK_all(); // prints out values in the console
 
 	// toggle between the arms
 	if (key == FSKEY_M)
@@ -365,17 +355,30 @@ void ViewManager::draw_overlay2D()
 	textfont.drawText("W, A, S, D, E, C - move start/goal position", 10, 50, .25);
 	textfont.drawText("            T, G - toggle star(T)/(G)oal movement", 10, 65, .25);
 	textfont.drawText("arrow keys, F, B - move camera", 10, 80, .25);
-	textfont.drawText("           space - update arm position", 10, 95, .25);
+	textfont.drawText("               M - Toggle arm type", 10, 95, .25);
+	textfont.drawText("               P - Move arm from start to goal", 10, 110, .25);
 
-	textfont.drawText("currently moving: ", 10, 130, .31);
+	textfont.drawText("Current Arm: ", 10, 130, .31);
+	if (theArmType == scara) {
+		textfont.drawText("SCARA", 205, 130, .31);
+	}
+	if (theArmType == puma) {
+		textfont.drawText("Puma560", 205, 130, .31);
+	}
+	if (theArmType == stanford) {
+		textfont.drawText("Stanford", 205, 130, .31);
+	}
+
+	textfont.drawText("Currently moving: ", 10, 150, .31);
 	if (moveToggle == moveGoal) {
 		textfont.setColorRGB(0.8, 0, 0);
-		textfont.drawText("GOAL", 205, 130, .31);
+		textfont.drawText("GOAL", 205, 150, .31);
 	}
 	if (moveToggle == moveStart) {
 		textfont.setColorRGB(0, 0.7, 0);
-		textfont.drawText("START", 205, 130, .31);
+		textfont.drawText("START", 205, 150, .31);
 	}
+
 	textfont.setColorRGB(0, 0, 0);
 
 	//camera metrics - lower left of screen
@@ -463,25 +466,13 @@ bool ViewManager::controlArm()
 	
 	// compute IK from current joint variables
 	InverseKinematics theIK(arm_target.x, arm_target.y, arm_target.z, theArm[0]);
-	/*theIK.getIKAnalytical();*/
 	isInsideWorkspace = theIK.getIK();
 	theIK.getResult(newJointVariables);
-
-	/*std::cout << "newJointVariables are " << newJointVariables << std::endl;*/
 
 	// draw arm with updated joint variables
 	std::vector<double>temp = InverseKinematics::vector3dToRegularVector(newJointVariables);
 	theArm[0]->moveArm(temp);
-	if (isInsideWorkspace) {
-		std::stringstream ss0;
-		ss0 << "Goal position is inside workspace" << '\n';
-		OutputDebugStringA(ss0.str().c_str());
-	}
-	else {
-		std::stringstream ss0;
-		ss0 << "Goal position is NOT inside workspace" << '\n';
-		OutputDebugStringA(ss0.str().c_str());
-	}
+	
 	return isInsideWorkspace;
 }
 
@@ -504,15 +495,6 @@ bool ViewManager::canArmReach(double xpos, double ypos, double zpos)
 void ViewManager::toggleArmType()
 {
 	theArmType = static_cast<armType>((theArmType + 1) % 3);
-	if (theArmType == scara) {
-		std::cout << "Build SCARA arm" << std::endl;
-	}
-	else if (theArmType == puma) {
-		std::cout << "Build puma560 arm" << std::endl;
-	}
-	else if (theArmType == stanford) {
-		std::cout << "Build Stanford arm" << std::endl;
-	}
 	buildNewArm(theArmType);
 }
 
@@ -532,7 +514,7 @@ void ViewManager::buildNewArm(armType theArmType)
 		theArm[0]->buildArm_PUMA560();
 	}
 	else if (theArmType == stanford) {
-		theArm[0]->buildArm();
+		theArm[0]->buildArm_Stanford();
 	}
 	// position the new arm's end effector at the current target
 	controlArm();

@@ -1,6 +1,4 @@
 #pragma once
-#include <math.h>
-#include <iostream>
 #include <Eigen/Dense>
 #include "Link.h"
 #include "Joint.h"
@@ -64,12 +62,6 @@ public:
 		parent = nullptr;
 		link = nullptr;
 		joint = nullptr;
-		//movingJoint = nullptr;
-		// the method used before implementing rotation about x-axis at drawing
-		//transformMatrix << 1, 0, 0, 0,
-		//					0, 0, 1, 0,
-		//					0, -1, 0, 0,
-		//					0, 0, 0, 1;
 	};
 
 	// constructor for all DH frames except the 0th
@@ -93,8 +85,6 @@ public:
 		parent = nullptr;
 		link = nullptr;
 		joint = nullptr;
-		//movingJoint = nullptr;
-
 	}; 
 
 	// initialize (or update) transform matrix from the DH parameters
@@ -170,9 +160,6 @@ public:
 
 	// updates both worldTransformMatrix and test_worldTransformMatrix
 	void updateWorldTransformMatrices();
-
-	// print transform matrix (for debugging)
-	void printTransformMatrix();
 
 	// draws link & joint associated with frame
 	void draw() {

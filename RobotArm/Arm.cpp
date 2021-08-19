@@ -13,7 +13,6 @@ using namespace Eigen;
 
 void Arm::draw()
 {
-		
 	for (auto& frame : theFrames) {
 		// store current matrix state
 		glPushMatrix();
@@ -26,18 +25,17 @@ void Arm::draw()
 		
 		// translate into the local frame
 		Vector3d worldCenter = frame->getWorldCenter(false);
-		/*std::cout << "World center of joint" << std::endl << worldCenter << std::endl;*/
 
 		glTranslatef(worldCenter(0), worldCenter(1), worldCenter(2));
 
 		// rotate into the local frame
 		// get rotation matrix in world coordinates
 		Matrix3d worldRotation = frame->getWorldRotationMat(false);
-		/*std::cout << "World rotation of joint" << std::endl << worldRotation << std::endl;*/
 
 		// get angle-axis representation from rotation matrix
 		Eigen::AngleAxisd theAngleAxis(worldRotation);
 		double angleRotate = theAngleAxis.angle();
+
 		// convert from radian to degree
 		angleRotate = angleRotate / PI * 180;
 		Vector3d axisRotate = theAngleAxis.axis();
@@ -48,12 +46,10 @@ void Arm::draw()
 
 		// restore original matrix state
 		glPopMatrix();
-
 	}
-
 }
 
-void Arm::buildArm()
+void Arm::buildArm_Stanford()
 {
 	alpha = 0.00001; // learning rate for revolute joint
 	alphaPris = 0.5; // learning rate for prismatic joint
@@ -144,39 +140,6 @@ void Arm::buildArm()
 	
 	// record the frame index 4 in the collection of indices of frames containing jointVariables
 	frameWithJointVariable.push_back(4);
-
-	// drawing an arm with single revolute joint for debugging
-	//// define the 0th DH frame
-	//DHframe* zerothFrame = new DHframe();
-
-	//// create the first (revolute) joint, assign to 0th DH frame
-	//Joint* firstJoint = new Joint();
-	//zerothFrame->assignJoint(firstJoint);
-	//jointFrameMap.insert({ firstJoint, zerothFrame });
-
-	//// add the joint to the joint collection
-	//theJoints.push_back(firstJoint);
-
-	//// add DH frame to frame collection
-	//theFrames.push_back(zerothFrame);
-
-	//// define the first DH frame
-	//DHframe* firstFrame = new DHframe(0., PI/2, 0., PI / 2);
-	//firstFrame->assignParentDHframe(zerothFrame);
-
-	//// create first link and assign to first DH frame
-	//Link* firstLink = new Link(25);
-	//firstFrame->assignLink(firstLink, Link::alongZ);
-
-	//// add DH frame to frame collection
-	//theFrames.push_back(firstFrame);
-
-	//// define the second DH frame
-	//DHframe* secondFrame = new DHframe(0., 0., 25., 0.);
-	//secondFrame->assignParentDHframe(firstFrame);
-
-	//// add DH frame to frame collection
-	//theFrames.push_back(secondFrame);
 }
 
 void Arm::buildArm_PUMA560()
@@ -288,7 +251,6 @@ void Arm::buildArm_PUMA560()
 
 	// add DH frame to frame collection
 	theFrames.push_back(sixthFrame);
-
 }
 
 void Arm::buildArm_SCARA()
@@ -402,7 +364,6 @@ void Arm::buildArm_SCARA()
 
 	// add DH frame to frame collection
 	theFrames.push_back(sixthFrame);
-
 }
 
 
@@ -421,7 +382,6 @@ void Arm::moveArm(std::vector<double> jointVariables)
 	}
 	// also updates test frames to ensure next test frame computation is based on actual joint variables 
 	updateTestFrames(jointVariables);
-
 }
 
 
@@ -451,7 +411,6 @@ Vector3d Arm::getTestJointVariable()
 		else if (theJoints[i]->type == Joint::prismatic)
 			testJointVariables(i) = theFrames[currFrameIndex]->test_d;
 	}
-
 	return testJointVariables;
 }
 
@@ -465,10 +424,7 @@ Vector3d Arm::compute_test_FK(int frameIndex)
 		theFrame = theFrames[frameIndex];
 		theFK = theFrame->getWorldCenter(true); 
 	}
-
 	return theFK;
-
-
 }
 
 Vector3d Arm::compute_test_FK(DHframe* theFrame)
@@ -485,18 +441,10 @@ std::vector<DrawingUtilNG::vertexF> Arm::compute_test_FK_all()
 	for (int i = 0; i < frameWithEndPoints.size(); i++) {
 		int currFrameIndex = frameWithEndPoints[i];
 		Vector3d tempVector3d = compute_test_FK(currFrameIndex);
-		std::cout << "tempVector3d is " << tempVector3d(0) << ", " << tempVector3d(1) << ", " << tempVector3d(2) << std::endl;
 		DrawingUtilNG::vertexF tempVertexF = { (float)tempVector3d(0), (float)tempVector3d(1),(float)tempVector3d(2) };
-		std::cout << "tempVertexF is " << (float)tempVector3d(0) << ", " << (float)tempVector3d(1) << ", " << (float)tempVector3d(2) << std::endl;
 		res.push_back(tempVertexF);
 	}
 	return res;
-}
-
-void Arm::testing_compute_test_FK_all()
-{
-	std::vector<DrawingUtilNG::vertexF>res = compute_test_FK_all();
-	std::cout << "Testing completed" << std::endl; //set a stop on this line and check value of res by hovering mouse over the "res" on previous line
 }
 
 

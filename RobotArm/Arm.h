@@ -22,10 +22,6 @@ public:
 			for (auto& currFrame : theFrames)
 				delete currFrame;
 		}
-		/*if (!theLinks.empty()) {
-			for (auto& currLink : theLinks)
-				delete currLink;
-		}*/
 	}
 
 	std::vector<Link> theLinks; //vector of links that forms the arm. 0th link is the base
@@ -41,7 +37,7 @@ public:
 	void draw();
 
 	// builds the Arm from DH parameters
-	void buildArm();
+	void buildArm_Stanford();
 
 	// builds the PUMA560 arm 
 	void buildArm_PUMA560();
@@ -66,13 +62,5 @@ public:
 
 	// computes and returns the forward kinematics to each joint center and the end effector in a vector of DrawingUtilNG::vertexF
 	std::vector<DrawingUtilNG::vertexF> compute_test_FK_all();
-
-	// for debugging and testing compute_test_FK_all
-	void testing_compute_test_FK_all();
-
-	// gets DH parameters from user
-	void getDHParameters();
-
-
 };
 

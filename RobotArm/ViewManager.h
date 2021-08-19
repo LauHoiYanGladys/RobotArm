@@ -33,11 +33,8 @@ public:
 	bool targetMoved = false;						//boolean for whether the arm's target position has changed
 
 	bool isArmReached = false;			//boolean for whether arm is able to reach desired end effector position
-	bool isArmIntersecting = false;		//boolean for whether arm is intersectino obstacles
 
 	bool isTracing = false; // boolean for whether arm is currently tracing from start to goal
-
-	bool tracingPrelimsAreSet = false; // true if preliminaries are computed before tracing starts
 
 	//keep track of whether user is adjusting start or goal position
 	enum moveToggleEnum { moveStart, moveGoal };
@@ -45,16 +42,13 @@ public:
 
 	// Type of arm to build
 	enum armType {stanford, puma, scara};
-	armType theArmType = scara;
+	armType theArmType;
 
 	// vector containers for waypoints
 	std::vector<DrawingUtilNG::vertexF> waypoints;
 	
 	// waypoint interval
 	int waypointInterval = 2;
-
-	// true if current arm control has been completed
-	bool armControlCompleted = false;
 
 	//timestamp of the last time the arm calculated its position
 	std::chrono::system_clock::time_point prevArmMoveTime;// = std::chrono::system_clock::now();

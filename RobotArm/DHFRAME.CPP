@@ -1,9 +1,7 @@
-#include <vector>
 #include "DHframe.h"
 
 void DHframe::initialize()
 {
-
 	transformMatrix(0, 0) = cos(jointAngle);
 	transformMatrix(0, 1) = -sin(jointAngle) * cos(linkTwist);
 	transformMatrix(0, 2) = sin(jointAngle) * sin(linkTwist);
@@ -20,8 +18,6 @@ void DHframe::initialize()
 	transformMatrix(3, 1) = 0;
 	transformMatrix(3, 2) = 0;
 	transformMatrix(3, 3) = 1;
-
-	/*std::cout << "Transform matrix updated to:" << std::endl << transformMatrix << theta << std::endl;*/
 }
 
 void DHframe::test_initialize()
@@ -42,7 +38,6 @@ void DHframe::test_initialize()
 	test_transformMatrix(3, 1) = 0;
 	test_transformMatrix(3, 2) = 0;
 	test_transformMatrix(3, 3) = 1;
-	/*std::cout << "Test transform matrix updated to:" << std::endl << test_transformMatrix << theta << std::endl;*/
 }
 
 Vector3d DHframe::getZAxis()
@@ -60,7 +55,6 @@ Vector3d DHframe::getZAxisWorldTest()
 void DHframe::assignParentDHframe(DHframe* theParent)
 {
 	parent = theParent;
-	///*std::cout << "World transform matrix: " << std::endl << worldTransformMatrix << std::endl;*/
 	updateWorldTransformMatrices(); // world and test_worldTransformMatrix can be assigned once parent DH frame is known
 }
 
@@ -106,7 +100,6 @@ Matrix4d DHframe::getWorldTransformMatrix(bool isTest)
 		if (parent == nullptr) // base case
 			return transformMatrix;
 		else {
-			/*std::cout << "parent transform matrix" << std::endl << parent->worldTransformMatrix << std::endl;*/
 			return  (parent->getWorldTransformMatrix(isTest)) * transformMatrix;
 		}
 	}
@@ -114,9 +107,7 @@ Matrix4d DHframe::getWorldTransformMatrix(bool isTest)
 		if (parent == nullptr) // base case
 			return test_transformMatrix;
 		else {
-			/*std::cout << "parent test world transform matrix" << std::endl << parent->test_worldTransformMatrix << std::endl;*/
 			return  (parent->getWorldTransformMatrix(isTest)) * test_transformMatrix;
-			
 		}
 	}
 		
@@ -197,8 +188,6 @@ void DHframe::update_theta(double new_theta)
 {
 	theta = new_theta;
 	updateJointAngle(false); // update jointAngle only, not test_jointAngle
-	/*std::cout << "Joint angle updated to " << theta << std::endl;*/
-
 }
 
 void DHframe::update_test_theta(double new_test_theta)
@@ -216,7 +205,6 @@ void DHframe::updateJointAngle(bool isTest)
 	}
 	else {
 		test_jointAngle = test_theta + theta_fixed;
-		/*std::cout << "test_jointAngle updated to " << test_jointAngle << std::endl;*/
 		test_initialize();
 		test_worldTransformMatrix = getWorldTransformMatrix(true);
 	}
@@ -227,34 +215,17 @@ void DHframe::updateWorldTransformMatrices()
 {
 	worldTransformMatrix = getWorldTransformMatrix(false);
 	test_worldTransformMatrix = getWorldTransformMatrix(true);
-	std::cout << "world transformation matrices initialized" << std::endl;
-}
-
-
-void DHframe::printTransformMatrix()
-{
-	std::cout << transformMatrix << std::endl;
 }
 
 void DHframe::drawLink()
 {
 	if (link != nullptr) {
 		glColor3ub(200, 0, 0);	//red
-
-		//if (joint != nullptr) {
-		//	if (joint->type == Joint::revolute)
-		//		link->draw_simple();
-		//	else if (joint->type == Joint::prismatic)
-		//		link->draw_offset_prismatic(joint->jointVariable);
-		//}
-		//else
-		//	link->draw_simple();
 		
 		if (joint != nullptr && joint->type == Joint::prismatic)
 			link->draw(joint->jointVariable);
 		else
 			link->draw(0);
-
 	}
 }
 

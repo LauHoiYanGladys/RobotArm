@@ -1,4 +1,3 @@
-#include <iostream>
 #include "ViewManager.h"
 
 using Eigen::MatrixXd;
